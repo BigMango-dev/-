@@ -139,14 +139,14 @@ const ARTIFACTS = [
   { id: 'art_11', name: '鸿蒙造化玉', reqRealm: 19, cost: 8.0e17, qiMult: 750.0,stoneMult: 700.0,cdCut: 0.80 }
 ];
 
-// 辅助丹药（珍稀高价消耗品，冲关瓶颈时服用事半功倍，轮回时重置）
+// 辅助丹药（消耗品，轮回时重置）
 const PILLS = [
-  { id: 'p_qi',      name: '聚气丹',   reqRealm: 0,  cost: 350,      qiMult: 1.40, stoneMult: 1.15, desc: '1.40x 吐纳修为，+15% 灵石（每颗消耗 1 次吐纳）。' },
-  { id: 'p_zhuji',   name: '筑基灵液', reqRealm: 1,  cost: 3200,     qiMult: 1.75, stoneMult: 1.30, desc: '1.75x 吐纳修为，1.30x 灵石。' },
-  { id: 'p_jindan',  name: '凝金丹',   reqRealm: 2,  cost: 32000,    qiMult: 2.15, stoneMult: 1.55, desc: '2.15x 吐纳修为，1.55x 灵石。' },
-  { id: 'p_yuanying',name: '蕴婴仙丹', reqRealm: 4,  cost: 550000,   qiMult: 2.70, stoneMult: 1.95, desc: '2.70x 吐纳修为，1.95x 灵石。' },
-  { id: 'p_xian',    name: '九转金丹', reqRealm: 9,  cost: 6.5e7,    qiMult: 3.60, stoneMult: 2.60, desc: '3.60x 仙灵修为，2.60x 灵石。' },
-  { id: 'p_hong',    name: '鸿蒙道丹', reqRealm: 15, cost: 2.5e12,   qiMult: 5.20, stoneMult: 3.80, desc: '5.20x 至高修为，3.80x 灵石。' }
+  { id: 'p_qi',      name: '聚气丹',   reqRealm: 0,  cost: 30,       qiMult: 1.40, stoneMult: 1.15, desc: '1.40x 吐纳修为，+15% 灵石（每颗消耗 1 次吐纳）。' },
+  { id: 'p_zhuji',   name: '筑基灵液', reqRealm: 1,  cost: 180,      qiMult: 1.75, stoneMult: 1.30, desc: '1.75x 吐纳修为，1.30x 灵石。' },
+  { id: 'p_jindan',  name: '凝金丹',   reqRealm: 2,  cost: 1100,     qiMult: 2.15, stoneMult: 1.55, desc: '2.15x 吐纳修为，1.55x 灵石。' },
+  { id: 'p_yuanying',name: '蕴婴仙丹', reqRealm: 4,  cost: 15000,    qiMult: 2.70, stoneMult: 1.95, desc: '2.70x 吐纳修为，1.95x 灵石。' },
+  { id: 'p_xian',    name: '九转金丹', reqRealm: 9,  cost: 650000,   qiMult: 3.60, stoneMult: 2.60, desc: '3.60x 仙灵修为，2.60x 灵石。' },
+  { id: 'p_hong',    name: '鸿蒙道丹', reqRealm: 15, cost: 4.5e7,    qiMult: 5.20, stoneMult: 3.80, desc: '5.20x 至高修为，3.80x 灵石。' }
 ];
 
 // 轮回神通（消耗轮回道果，永久保留，线性成长防爆炸）

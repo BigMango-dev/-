@@ -1151,6 +1151,50 @@ function fmtBulkBtn(calc, prefix, unit) {
   return `${prefix}${qty} — ${fmt(calc.cost)} ${unit}`;
 }
 
+
+let pillBuyMode = '20'; // '20' | '100' | '1000' | '10000' | '100000' | 'max'
+
+function calcPillBuy(pill, stones, mode = pillBuyMode) {
+  if (mode === 'max') {
+    const count = Math.floor(stones / pill.cost);
+    if (count <= 0) return { count: 1, cost: pill.cost, canBuy: false };
+    return { count, cost: count * pill.cost, canBuy: true };
+  }
+  const count = Number(mode) || 20;
+  const cost = count * pill.cost;
+  return { count, cost, canBuy: stones >= cost };
+}
+
+function fmtPillBuyBtn(calc, mode = pillBuyMode) {
+  if (mode === 'max') {
+    return calc.canBuy ? `买最大 (+${fmt(calc.count)})` : `最大 — ${fmt(calc.cost)}`;
+  }
+  return `购买 +${fmt(calc.count)} (${fmt(calc.cost)})`;
+}
+
+function renderPillBuyModeBar() {
+  const modes = [
+    { id: '20', label: '+20' },
+    { id: '100', label: '+100' },
+    { id: '1000', label: '+1千' },
+    { id: '10000', label: '+1万' },
+    { id: '100000', label: '+10万' },
+    { id: 'max', label: '最大' }
+  ];
+  return `
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">💊 辅助灵丹</h4>
+      <div class="inline-flex flex-wrap items-center gap-1 bg-xian-950 p-1 rounded-xl border border-slate-800">
+        ${modes.map(m => `
+          <button data-pill-mode="${m.id}" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition ${
+            pillBuyMode === m.id ? 'bg-emerald-500/25 text-emerald-200 border border-emerald-400/50' : 'text-slate-400 hover:text-white border border-transparent'
+          }">${m.label}</button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
 function refreshAffordability() {
   if (activeTab === 'arts') {
     DOM.tabArea.querySelectorAll('[data-buy-art]').forEach(btn => {
@@ -1166,6 +1210,23 @@ function refreshAffordability() {
       const calc = calcBulk(ph.art.baseCost, ph.art.scale, state.physiqueArts[ph.art.id] || 0, ph.art.maxLv, state.jade);
       btn.disabled = !calc.canBuy;
       btn.textContent = fmtBulkBtn(calc, '淬炼神诀', '💎');
+    });
+  } else if (activeTab === 'treasures') {
+    DOM.tabArea.querySelectorAll('[data-pill-buy]').forEach(btn => {
+      const p = PILLS.find(x => x.id === btn.dataset.pillBuy);
+      if (!p) return;
+      const calc = calcPillBuy(p, state.stones, pillBuyMode);
+      btn.disabled = !calc.canBuy;
+      btn.textContent = fmtPillBuyBtn(calc, pillBuyMode);
+    });
+    DOM.tabArea.querySelectorAll('[data-artifact]').forEach(btn => {
+      const a = ARTIFACTS.find(x => x.id === btn.dataset.artifact);
+      if (!a) return;
+      const owned = state.ownedArtifacts.includes(a.id);
+      const eq = state.artifactId === a.id;
+      if (!owned && !eq) {
+        btn.disabled = state.stones < a.cost || state.realmIdx < a.reqRealm;
+      }
     });
   } else if (activeTab === 'reincarnate') {
     DOM.tabArea.querySelectorAll('[data-buy-kperk]').forEach(btn => {
@@ -1389,6 +1450,7 @@ function renderTreasuresTab(container) {
         </div>
       `;
     }
+    const calc = calcPillBuy(p, state.stones, pillBuyMode);
     return `
       <div class="p-3.5 rounded-xl bg-xian-850 border ${eq ? 'border-emerald-400 bg-emerald-500/10' : 'border-slate-800'} flex flex-col justify-between gap-2.5">
         <div>
@@ -1398,10 +1460,9 @@ function renderTreasuresTab(container) {
           </div>
           <p class="text-xs text-slate-400 mt-1">${p.desc}</p>
         </div>
-        <div class="grid grid-cols-3 gap-1.5">
-          <button data-pill-buy="${p.id}:5" ${state.stones < p.cost * 5 ? 'disabled' : ''} class="py-1.5 rounded-lg text-[11px] font-bold bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 text-white">+5 (${fmt(p.cost * 5)})</button>
-          <button data-pill-buy="${p.id}:25" ${state.stones < p.cost * 25 ? 'disabled' : ''} class="py-1.5 rounded-lg text-[11px] font-bold bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 text-white">+25 (${fmt(p.cost * 25)})</button>
-          <button data-pill-eq="${p.id}" ${qty <= 0 ? 'disabled' : ''} class="py-1.5 rounded-lg text-[11px] font-bold ${eq ? 'bg-amber-400 text-slate-950' : 'bg-emerald-600 hover:bg-emerald-500 text-white'} disabled:bg-xian-950 disabled:text-slate-500">${eq ? '服用中' : '服用'}</button>
+        <div class="grid grid-cols-12 gap-1.5">
+          <button data-pill-buy="${p.id}" ${calc.canBuy ? '' : 'disabled'} class="col-span-8 py-2 px-2 rounded-xl text-[11px] font-extrabold bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800 text-white transition active:scale-95 truncate">${fmtPillBuyBtn(calc, pillBuyMode)}</button>
+          <button data-pill-eq="${p.id}" ${qty <= 0 ? 'disabled' : ''} class="col-span-4 py-2 px-2 rounded-xl text-[11px] font-extrabold ${eq ? 'bg-amber-400 text-slate-950' : 'bg-emerald-600 hover:bg-emerald-500 text-white'} disabled:bg-xian-950 disabled:text-slate-500 transition active:scale-95">${eq ? '服用中' : '服用'}</button>
         </div>
       </div>
     `;
@@ -1426,7 +1487,7 @@ function renderTreasuresTab(container) {
       </div>
 
       <div class="space-y-2.5 pt-2 border-t border-slate-800">
-        <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">💊 辅助灵丹</h4>
+        ${renderPillBuyModeBar()}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${pillCards}</div>
       </div>
     </div>
@@ -1450,14 +1511,18 @@ function renderTreasuresTab(container) {
       renderActiveTab();
     };
   });
+  container.querySelectorAll('[data-pill-mode]').forEach(btn => {
+    btn.onclick = () => { pillBuyMode = btn.dataset.pillMode; renderActiveTab(); };
+  });
   container.querySelectorAll('[data-pill-buy]').forEach(btn => {
     btn.onclick = () => {
-      const [pid, nStr] = btn.dataset.pillBuy.split(':');
-      const n = Number(nStr);
+      const pid = btn.dataset.pillBuy;
       const p = PILLS.find(x => x.id === pid);
-      if (state.stones >= p.cost * n) {
-        state.stones -= p.cost * n;
-        state.pills[pid] = (state.pills[pid] || 0) + n;
+      if (!p) return;
+      const calc = calcPillBuy(p, state.stones, pillBuyMode);
+      if (calc.canBuy && calc.count > 0) {
+        state.stones -= calc.cost;
+        state.pills[pid] = (state.pills[pid] || 0) + calc.count;
         if (!state.activePill) state.activePill = pid;
         hudDirty = true;
         flushHUD();
