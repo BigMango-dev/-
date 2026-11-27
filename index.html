@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>九霄问道 · 诸天修仙录</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            xian: {
+              950: '#090c15',
+              900: '#101524',
+              850: '#161c30',
+              800: '#1e2640',
+              700: '#293354'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- ==================== 顶部状态栏 ==================== -->
+  <header class="sticky top-0 z-30 bg-xian-900/95 border-b border-slate-800 shadow-xl">
+    <div id="top-header-bar" class="max-w-[1440px] mx-auto px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between gap-2">
+      <!-- 标题与轮回徽章 -->
+      <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-amber-400 via-teal-400 to-indigo-500 flex items-center justify-center text-lg shadow-md shrink-0">
+          ☯️
+        </div>
+        <div class="flex items-center gap-1.5 min-w-0">
+          <h1 class="font-black text-sm sm:text-base tracking-wide bg-gradient-to-r from-amber-200 via-teal-200 to-indigo-300 bg-clip-text text-transparent truncate">
+            九霄问道
+          </h1>
+          <span id="ui-prestige-badge" class="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold bg-fuchsia-500/20 border border-fuchsia-400/40 text-fuchsia-200 shrink-0">
+            轮回 0世
+          </span>
+          <span id="ui-ascend-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold bg-amber-500/20 border border-amber-400/50 text-amber-200 shrink-0">
+            仙界
+          </span>
+        </div>
+      </div>
+
+      <!-- 资源栏与云存档按钮 -->
+      <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-xian-850 border border-amber-500/30 text-xs sm:text-sm font-extrabold" title="灵石">
+          <span>🪙</span>
+          <span id="ui-stones" class="text-amber-300 font-mono">0</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-xian-850 border border-emerald-500/30 text-xs sm:text-sm font-extrabold" title="仙玉">
+          <span>💎</span>
+          <span id="ui-jade" class="text-emerald-300 font-mono">0</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-xian-850 border border-fuchsia-500/30 text-xs sm:text-sm font-extrabold" title="轮回道果">
+          <span>🍑</span>
+          <span id="ui-karma" class="text-fuchsia-300 font-mono">0</span>
+        </div>
+        <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-xian-850 border border-cyan-500/30 text-xs font-bold" title="调息周期">
+          <span>⚡</span>
+          <span id="ui-cd-stat" class="text-cyan-300 font-mono">1.80s</span>
+        </div>
+        <div class="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-xian-850 border border-teal-500/30 text-xs font-bold" title="寿元">
+          <span>⏳</span>
+          <span id="ui-lifespan" class="text-teal-200 font-mono">80载</span>
+        </div>
+
+        <button id="btn-toggle-sfx" class="px-2 py-1.5 rounded-xl text-xs bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-300 transition active:scale-95" title="破境音效开关">
+          🔊
+        </button>
+
+        <div id="sync-status-badge" class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-xian-850 border border-slate-700 text-slate-300" title="云端同步状态">
+          <span id="sync-dot" class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+          <span id="sync-text">连接中...</span>
+        </div>
+
+        <button id="btn-open-account" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-200 transition active:scale-95" title="道号、Google登录与存档备份">
+          <span id="account-avatar">👤</span>
+          <span id="account-label" class="max-w-[85px] sm:max-w-[120px] truncate">散修</span>
+          <span class="text-slate-400">⚙️</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 醒目全宽境界与修为条 -->
+    <div id="realm-hero-strip" class="border-t border-slate-800/80 bg-xian-950/95">
+      <div class="max-w-[1440px] mx-auto px-3 sm:px-5 py-2 flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-4">
+        <div class="flex items-center gap-2 px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-teal-500/25 to-indigo-500/25 border border-amber-400/45 shadow shrink-0">
+          <span id="ui-realm-tier-tag" class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-black/40 text-amber-300">人界</span>
+          <span id="stat-realm-main" class="text-sm sm:text-lg font-black text-white tracking-wide leading-none">炼气期 · 初期</span>
+        </div>
+
+        <div class="flex-1 min-w-[180px]">
+          <div class="flex items-center justify-between text-[11px] sm:text-xs mb-1">
+            <span id="stat-qi-text-main" class="font-mono font-bold text-slate-200 truncate">0 / 120 修为</span>
+            <span id="stat-qi-pct-main" class="font-mono font-extrabold text-teal-300 shrink-0">0.0%</span>
+          </div>
+          <div class="w-full h-3.5 sm:h-4 bg-xian-900 rounded-full overflow-hidden border border-slate-700/80 shadow-inner">
+            <div id="stat-qi-bar-main" class="cd-gpu-bar h-full w-full bg-gradient-to-r from-teal-400 via-cyan-400 to-amber-300 rounded-full" style="transform: scaleX(0);"></div>
+          </div>
+        </div>
+
+        <!-- 手动突破按钮（修为圆满时金光脉动） -->
+        <button id="btn-breakthrough-top" disabled class="px-3.5 sm:px-5 py-2 rounded-xl font-black text-xs sm:text-sm tracking-wide transition shrink-0 disabled:opacity-40 disabled:cursor-not-allowed bg-xian-850 border border-slate-700 text-slate-400">
+          ⚡ 突破境界
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 主修仙工作区 ==================== -->
+  <main id="main-workspace" class="flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-5 py-3.5 sm:py-5 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
+
+    <!-- 左栏：洞府打坐台 -->
+    <section id="left-console-col" class="lg:col-span-5 xl:col-span-5 flex flex-col gap-4">
+      <div class="bg-xian-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
+        <!-- 界域画卷 -->
+        <div id="world-stage" class="relative h-36 sm:h-44 p-4 flex flex-col justify-between" style="background: linear-gradient(135deg, #0f766e, #0f172a);">
+          <div class="relative z-10 flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span id="ui-world-icon" class="text-xl sm:text-2xl">⛰️</span>
+                <h2 id="ui-world-name" class="text-lg sm:text-xl font-black tracking-wide text-white">苍梧大陆</h2>
+              </div>
+              <p id="ui-world-desc" class="text-[11px] sm:text-xs text-slate-200/90 mt-1 line-clamp-2 max-w-xs">
+                灵脉初显的人界古陆，山川秀丽，最宜初入仙途者引气入体。
+              </p>
+            </div>
+            <span id="ui-world-mult" class="px-2.5 py-1 rounded-lg bg-black/50 border border-white/15 text-[11px] font-extrabold text-amber-300 shrink-0">
+              1x 灵石 | 12 修为
+            </span>
+          </div>
+
+          <div class="relative z-10 flex items-end justify-between">
+            <span id="stage-status-text" class="text-[11px] sm:text-xs font-semibold text-teal-200 bg-black/45 px-2.5 py-1 rounded-full border border-white/10">
+              灵气充盈，按空格或点击打坐吐纳
+            </span>
+            <div id="meditate-sprite" class="text-4xl sm:text-5xl select-none sprite-idle">
+              🧘
+            </div>
+          </div>
+        </div>
+
+        <!-- 修炼控制台 -->
+        <div class="p-3.5 sm:p-4 space-y-3">
+          <div>
+            <div class="flex items-center justify-between text-[11px] sm:text-xs mb-1">
+              <span class="font-bold text-slate-400">吐纳调息</span>
+              <span id="cooldown-timer-text" class="font-mono font-bold text-teal-300">就绪 (1.80s)</span>
+            </div>
+            <div class="w-full h-2.5 bg-xian-950 rounded-full overflow-hidden border border-slate-800">
+              <div id="cooldown-bar-fill" class="cd-gpu-bar h-full w-full bg-gradient-to-r from-teal-400 via-cyan-400 to-amber-300" style="transform: scaleX(1);"></div>
+            </div>
+          </div>
+
+          <!-- 主打坐按钮 -->
+          <button id="btn-meditate" class="w-full py-3.5 px-5 rounded-2xl font-black text-base tracking-wider text-white bg-gradient-to-r from-teal-500 via-cyan-600 to-indigo-600 hover:brightness-110 active:scale-[0.98] transition shadow-lg border border-white/20 disabled:opacity-55 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <span>☯️</span>
+            <span>打坐吐纳</span>
+            <span class="hidden sm:inline text-[11px] font-semibold bg-black/25 px-2 py-0.5 rounded-md">Space</span>
+          </button>
+
+          <!-- 圆满时出现的醒目破境按钮 -->
+          <button id="btn-breakthrough-card" class="hidden w-full py-3.5 px-5 rounded-2xl font-black text-base tracking-wider text-slate-950 bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-400 hover:brightness-110 active:scale-[0.98] transition shadow-[0_0_25px_rgba(251,191,36,0.55)] border border-amber-200 flex items-center justify-center gap-2 breakthrough-ready-pulse">
+            <span>⚡</span>
+            <span id="btn-breakthrough-card-text">灵气圆满 · 立即破境！</span>
+          </button>
+
+          <!-- 辅助开关：丹药切换、自动打坐、仙玉护道 -->
+          <div class="grid grid-cols-3 gap-2">
+            <button id="btn-cycle-pill" class="py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold truncate transition active:scale-95" title="点击切换已拥有丹药">
+              💊 <span id="ui-active-pill-short">无丹药</span>
+            </button>
+            <button id="btn-automeditate" class="py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-300 text-[11px] font-bold transition active:scale-95">
+              🌀 自动: 关
+            </button>
+            <button id="btn-jade-guard" class="py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-300 text-[11px] font-bold truncate transition active:scale-95" title="开启后每次破境消耗仙玉，大幅提升成功率并减半失败修为损耗">
+              🛡️ 护道: 关
+            </button>
+          </div>
+
+          <!-- 快捷灵宝/机缘信息 -->
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button id="btn-quick-chests" class="p-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-left transition active:scale-[0.98]">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-amber-200">🎁 机缘秘宝</span>
+                <span id="ui-physique-count" class="text-[10px] font-mono text-fuchsia-300">体质 0/9</span>
+              </div>
+              <div class="flex items-baseline gap-1.5 mt-0.5">
+                <span id="quick-chest-count" class="text-sm sm:text-base font-black text-amber-300 font-mono">0</span>
+                <span class="text-[11px] text-slate-400">待开启</span>
+              </div>
+            </button>
+
+            <div class="p-2.5 rounded-xl bg-indigo-500/15 border border-indigo-400/35 text-left">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-indigo-200">✨ 综合倍率</span>
+                <span id="ui-stone-mult" class="text-[10px] font-mono text-amber-300">1.0x 灵石</span>
+              </div>
+              <div id="ui-qi-mult" class="text-sm sm:text-base font-black text-cyan-300 font-mono mt-0.5">1.0x 修为</div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 px-1">
+            <span>本命法宝: <strong id="ui-equipped-artifact" class="text-slate-200">木灵剑</strong></span>
+            <span>道心境界: <strong id="ui-next-realm-hint" class="text-amber-300">炼气中期</strong></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右栏：修仙总阁（功法、法宝丹药、游历界域、境界图谱、逆天体质、飞升轮回、诸天金榜） -->
+    <section id="right-command-col" class="lg:col-span-7 xl:col-span-7 bg-xian-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col min-h-[600px] lg:min-h-[660px]">
+      <div class="scroll-fade-wrap bg-xian-850 border-b border-slate-800">
+        <nav id="main-tabs" class="flex items-center gap-1 p-2 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pr-8 sm:pr-2">
+          <button data-tab="arts" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition">
+            📖 功法修炼
+          </button>
+          <button data-tab="treasures" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition relative">
+            ⚔️ 法宝丹药
+            <span id="chest-ready-dot" class="hidden w-2 h-2 rounded-full bg-amber-400"></span>
+          </button>
+          <button data-tab="worlds" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition">
+            🗺️ 游历界域
+          </button>
+          <button data-tab="realms" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition">
+            📜 境界图谱
+          </button>
+          <button data-tab="physiques" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition relative">
+            🧬 逆天体质
+          </button>
+          <button data-tab="reincarnate" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition relative">
+            ⚡ 飞升轮回
+            <span id="prestige-ready-dot" class="hidden w-2.5 h-2.5 rounded-full bg-fuchsia-400"></span>
+          </button>
+          <button data-tab="leaderboard" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition">
+            🏆 诸天金榜
+          </button>
+        </nav>
+      </div>
+
+      <div id="tab-content-area" class="p-3.5 sm:p-5 flex-1 overflow-y-auto max-h-[820px]"></div>
+    </section>
+
+    <!-- 底部：修炼日志（置于最下方，永不导致页面跳动） -->
+    <section id="cultivation-log-section" class="lg:col-span-12 bg-xian-900 rounded-2xl border border-slate-800 shadow-xl p-3.5 sm:p-4 flex flex-col gap-2.5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-teal-400"></span>
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">修炼日志 · 道途纪事</h3>
+        </div>
+        <span class="text-[11px] text-slate-400 font-mono">累计吐纳: <strong id="ui-total-ticks" class="text-slate-200">0</strong> 次</span>
+      </div>
+      <div id="log-feed-list" class="space-y-1.5 overflow-y-auto pr-1"></div>
+    </section>
+  </main>
+
+  <!-- ==================== 移动端底部快捷修炼栏 ==================== -->
+  <div id="mobile-cast-dock" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-xian-900 border-t border-slate-700 px-3 pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.65)]">
+    <div class="flex items-center justify-between gap-2 mb-1.5 text-[11px]">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <span id="dock-world-label" class="font-bold text-slate-200 truncate">⛰️ 苍梧大陆</span>
+        <span class="text-slate-600">•</span>
+        <button id="dock-cycle-pill" class="font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full truncate active:scale-95 transition">
+          丹药: <span id="dock-pill-label">无</span>
+        </button>
+      </div>
+      <span id="dock-cooldown-text" class="font-mono font-bold text-teal-300 shrink-0">就绪</span>
+    </div>
+    <div class="w-full h-1.5 bg-xian-950 rounded-full overflow-hidden border border-slate-800 mb-2">
+      <div id="dock-cooldown-bar" class="cd-gpu-bar h-full w-full bg-gradient-to-r from-teal-400 via-cyan-400 to-amber-300 rounded-full" style="transform: scaleX(1);"></div>
+    </div>
+    <div class="grid grid-cols-12 gap-2">
+      <button id="dock-meditate-btn" class="col-span-7 min-h-[48px] py-2.5 px-3 rounded-2xl font-black text-sm tracking-wide text-white bg-gradient-to-r from-teal-500 via-cyan-600 to-indigo-600 active:scale-[0.97] transition shadow-lg border border-white/20 disabled:opacity-60 flex items-center justify-center gap-1.5">
+        <span>☯️</span>
+        <span>打坐吐纳</span>
+      </button>
+      <button id="dock-break-btn" disabled class="col-span-5 min-h-[48px] py-2 px-2 rounded-2xl bg-xian-850 border border-slate-700 text-slate-400 font-extrabold text-xs flex items-center justify-center gap-1 active:scale-95 transition disabled:opacity-45">
+        <span>⚡</span>
+        <span>突破境界</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 破境 / 渡劫飞升 全屏特效遮罩 ==================== -->
+  <div id="breakthrough-overlay" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden select-none cursor-pointer">
+    <div id="bt-backdrop" class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+    <div id="bt-flash" class="absolute inset-0 pointer-events-none opacity-0"></div>
+    <div id="bt-particles" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+    <!-- 旋转八卦/星辰阵法环 -->
+    <div id="bt-ring-outer" class="bt-ring bt-ring-outer pointer-events-none"></div>
+    <div id="bt-ring-inner" class="bt-ring bt-ring-inner pointer-events-none"></div>
+    <div id="bt-shockwave" class="bt-shockwave pointer-events-none"></div>
+
+    <!-- 破境核心卡片 -->
+    <div id="bt-card" class="relative z-10 max-w-md w-full text-center space-y-3 px-6 py-7 rounded-3xl border shadow-2xl">
+      <div id="bt-kicker" class="text-xs font-extrabold tracking-[0.28em] uppercase text-amber-300">
+        道心圆满 · 破境成功
+      </div>
+      <div id="bt-icon" class="text-5xl sm:text-6xl my-1">⚡</div>
+      <h2 id="bt-title" class="text-2xl sm:text-3xl font-black tracking-wider text-white">
+        筑基期 · 初期
+      </h2>
+      <p id="bt-subtitle" class="text-xs sm:text-sm text-slate-200/90 leading-relaxed">
+        凝气成液，铸就道台，从此踏入真正修真之列！
+      </p>
+      <div id="bt-rewards" class="flex flex-wrap items-center justify-center gap-2 pt-2"></div>
+      <div class="text-[11px] text-slate-400 pt-2">点击任意处继续修行</div>
+    </div>
+  </div>
+
+  <!-- ==================== 悬浮提示栈 ==================== -->
+  <div id="toast-container" class="fixed right-3 sm:right-5 bottom-4 z-50 flex flex-col gap-2 max-w-xs sm:max-w-sm pointer-events-none"></div>
+
+  <!-- ==================== 道友账号、Google登录与备份弹窗 ==================== -->
+  <div id="account-modal" class="hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="bg-xian-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-black text-white">☁️ 道友玉简与云端存档</h3>
+        <button id="btn-close-account" class="w-8 h-8 rounded-lg bg-xian-850 hover:bg-xian-700 text-slate-300 font-bold">✕</button>
+      </div>
+
+      <div class="p-3 rounded-xl bg-xian-950 border border-slate-800 space-y-1.5 text-xs">
+        <div class="flex justify-between gap-2">
+          <span class="text-slate-400">当前身份:</span>
+          <span id="modal-account-type" class="font-bold text-teal-300 truncate">连接中...</span>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-slate-400">神识印记 (UID):</span>
+          <span id="modal-user-id" class="font-mono text-[11px] text-slate-300 truncate max-w-[210px]">—</span>
+        </div>
+      </div>
+
+      <div id="modal-auth-error" class="hidden p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs leading-snug"></div>
+
+      <div class="space-y-2">
+        <button id="btn-modal-google" class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]">
+          <span>🔵</span>
+          <span>Google 账号一键云端同步</span>
+        </button>
+        <button id="btn-modal-signout" class="hidden w-full py-2.5 px-4 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-bold text-xs transition active:scale-[0.98]">
+          退出 Google 账号（切换为散修游客）
+        </button>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 space-y-2">
+        <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">道号（将显示于诸天金榜）</label>
+        <div class="flex gap-2">
+          <input id="input-display-name" type="text" maxlength="18" placeholder="青云散修" class="flex-1 bg-xian-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-teal-400" />
+          <button id="btn-save-name" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs transition">保存</button>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 space-y-2">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">玉简手动备份 (JSON)</div>
+        <div class="grid grid-cols-3 gap-2">
+          <button id="btn-save-now" class="py-2.5 px-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition">☁️ 立即存档</button>
+          <button id="btn-export-save" class="py-2.5 px-2 rounded-xl bg-xian-850 hover:bg-xian-700 border border-slate-700 text-slate-200 font-bold text-xs transition">📤 导出</button>
+          <button id="btn-import-save-toggle" class="py-2.5 px-2 rounded-xl bg-xian-850 hover:bg-xian-700 border border-slate-700 text-slate-200 font-bold text-xs transition">📥 导入</button>
+        </div>
+        <input id="input-import-file" type="file" accept=".json,application/json" class="hidden" />
+        <div id="import-json-panel" class="hidden space-y-2 bg-xian-950 p-3 rounded-xl border border-slate-800">
+          <textarea id="input-import-json" rows="3" placeholder="粘贴导出的 JSON 存档，或选择 .json 文件..." class="w-full bg-xian-900 border border-slate-700 rounded-lg p-2 text-[11px] font-mono text-slate-200 focus:outline-none focus:border-teal-400"></textarea>
+          <div class="flex gap-2">
+            <button id="btn-import-file-pick" class="flex-1 py-2 rounded-lg bg-xian-800 hover:bg-xian-700 text-slate-200 font-bold text-xs transition">选择 .json 文件</button>
+            <button id="btn-import-json-apply" class="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition">载入存档</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800">
+        <button id="btn-hard-reset" class="w-full py-2.5 px-4 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-bold text-xs transition">
+          ⚠️ 兵解重修（彻底清空所有进度）
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 核心模块化脚本 -->
+  <script defer src="data.js"></script>
+  <script defer src="state.js"></script>
+  <script defer src="engine.js"></script>
+  <script defer src="ui.js"></script>
+  <script defer src="main.js"></script>
+  <!-- Firebase 游客/Google 单弹窗登录 + 独立修仙云存档与诸天金榜 -->
+  <script type="module" src="firebase.js"></script>
+</body>
+</html>
