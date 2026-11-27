@@ -348,7 +348,7 @@ function getPetExpRequired(petId, lv) {
   const pet = SPIRIT_PETS.find(x => x.id === petId);
   const tier = pet ? PET_TIERS.find(t => t.id === pet.tierId) : null;
   const tierMult = tier ? (tier.expMult || 1.0) : 1.0;
-  return Math.max(100, Math.floor(180 * tierMult * Math.pow(1.072, curLv - 1) * (1 + (curLv - 1) * 0.10)));
+  return Math.max(500, Math.floor(750 * tierMult * Math.pow(1.060, curLv - 1) * (1 + (curLv - 1) * 0.20)));
 }
 
 function getPetBonuses() {

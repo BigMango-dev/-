@@ -163,9 +163,9 @@ const PET_MAX_LEVEL = 100;
 
 const PET_TIERS = [
   { id: 'lingshou',  name: '灵兽',           baseRate: 0.011,    expMult: 1.0, maxJadeReward: 5,  badgeCls: 'bg-slate-500/25 text-slate-200 border-slate-400/40',     cardCls: 'border-slate-700 bg-xian-850', desc: '山林灵脉孕育的通灵异兽，初入仙途便有缘遇见。' },
-  { id: 'sixiang',   name: '四象圣兽',       baseRate: 0.0024,   expMult: 1.5, maxJadeReward: 15, badgeCls: 'bg-teal-500/25 text-teal-200 border-teal-400/50',        cardCls: 'border-teal-500/45 bg-teal-950/25', desc: '镇守四极的青龙、白虎、朱雀、玄龟圣兽，机缘难得。' },
-  { id: 'ruishou',   name: '上古瑞兽 / 凶兽', baseRate: 0.00045,  expMult: 2.2, maxJadeReward: 35, badgeCls: 'bg-amber-500/25 text-amber-200 border-amber-400/50',     cardCls: 'border-amber-500/50 bg-amber-950/25', desc: '太古传说的祥瑞与凶兽，结缘后带来惊人气运与资源掠夺！' },
-  { id: 'honghuang', name: '洪荒 / 太初神兽', baseRate: 0.000045, expMult: 3.0, maxJadeReward: 80, badgeCls: 'bg-fuchsia-500/25 text-fuchsia-200 border-fuchsia-400/60', cardCls: 'border-fuchsia-400/60 bg-gradient-to-br from-fuchsia-950/55 via-amber-950/35 to-indigo-950/55', desc: '开天时代的无上神兽，全境全图极低概率结缘认主！' }
+  { id: 'sixiang',   name: '四象圣兽',       baseRate: 0.0024,   expMult: 1.6, maxJadeReward: 15, badgeCls: 'bg-teal-500/25 text-teal-200 border-teal-400/50',        cardCls: 'border-teal-500/45 bg-teal-950/25', desc: '镇守四极的青龙、白虎、朱雀、玄龟圣兽，机缘难得。' },
+  { id: 'ruishou',   name: '上古瑞兽 / 凶兽', baseRate: 0.00045,  expMult: 2.4, maxJadeReward: 35, badgeCls: 'bg-amber-500/25 text-amber-200 border-amber-400/50',     cardCls: 'border-amber-500/50 bg-amber-950/25', desc: '太古传说的祥瑞与凶兽，结缘后带来惊人气运与资源掠夺！' },
+  { id: 'honghuang', name: '洪荒 / 太初神兽', baseRate: 0.000045, expMult: 3.5, maxJadeReward: 80, badgeCls: 'bg-fuchsia-500/25 text-fuchsia-200 border-fuchsia-400/60', cardCls: 'border-fuchsia-400/60 bg-gradient-to-br from-fuchsia-950/55 via-amber-950/35 to-indigo-950/55', desc: '开天时代的无上神兽，全境全图极低概率结缘认主！' }
 ];
 
 const SPIRIT_PETS = [

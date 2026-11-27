@@ -243,8 +243,8 @@ function rollPetDrops(trials = 1, silent = false, rateBoost = 1) {
           }
         }
       } else if (prevLv < PET_MAX_LEVEL) {
-        // 重复结缘：转化为该灵宠当前等级 15% 经验（需出战吐纳为主力升级方式）
-        const bonusExp = Math.max(25, Math.floor(getPetExpRequired(pick.id, prevLv) * 0.15));
+        // 重复结缘：转化为该灵宠当前等级 5% 经验（需出战吐纳为主力升级方式）
+        const bonusExp = Math.max(25, Math.floor(getPetExpRequired(pick.id, prevLv) * 0.05));
         grantPetExp(pick.id, bonusExp, silent);
         if (!silent) {
           addLog(`🐉 灵兽重逢！再次遇见 <span class="feed-strong">${pick.icon} ${pick.name}</span>，转化为 <span class="feed-emerald">+${fmt(bonusExp)} 灵宠经验</span>！`, 'treasure');
@@ -332,7 +332,7 @@ function performMeditate(silent = false, batchScale = 1) {
   // 出战灵宠随吐纳获取经验（仅当前出战灵宠可获得经验，最高 100 级）
   if (state.activePet && (state.pets[state.activePet] || 0) > 0 && state.pets[state.activePet] < PET_MAX_LEVEL) {
     const petExpGain = Math.max(1, Math.round(
-      (10 + state.realmIdx * 4) * critMult * (pill ? 1.25 : 1.0) * (state.ascended ? 1.3 : 1.0) * scale
+      (5 + state.realmIdx * 1.5) * (isCrit ? 1.35 : 1.0) * (pill ? 1.15 : 1.0) * (state.ascended ? 1.2 : 1.0) * scale
     ));
     grantPetExp(state.activePet, petExpGain, silent);
   }
