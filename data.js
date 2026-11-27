@@ -251,10 +251,49 @@ const RELICS = [
   { id: 'r_xq_1', tier: 'xianqi',  name: '炼妖仙壶',     icon: '🫖', qiPerLv: 0.45, stonePerLv: 0.70, jadePerLv: 0.55, luckPerLv: 0.40, btPerLv: 0,     critPerLv: 0,     desc: '仙界神器，吞纳妖灵化为无尽资粮，每级 +70% 灵石、+55% 仙玉、+40% 宝物掉率！' },
   { id: 'r_xq_2', tier: 'xianqi',  name: '昊天仙塔',     icon: '🗼', qiPerLv: 0.85, stonePerLv: 0.45, jadePerLv: 0.35, luckPerLv: 0,    btPerLv: 0.015, critPerLv: 0,     desc: '镇压九霄仙气，每级 +85% 修为、+45% 灵石、+1.5% 破境成功率！' },
   { id: 'r_xq_3', tier: 'xianqi',  name: '东皇太一铃',   icon: '🎐', qiPerLv: 0.65, stonePerLv: 0.65, jadePerLv: 0.65, luckPerLv: 0.45, btPerLv: 0.01,  critPerLv: 0.015, desc: '铃音震碎诸天因果，全属性暴增并额外增幅轮回道果！', karmaPerLv: 0.18 },
-  // 最高境界 · 三大先天至宝（唯一获取，不升级，全境全图极低概率掉落）
-  { id: 'rel_yudie',   tier: 'supreme', unique: true, name: '造化玉碟', icon: '💠', qiMult: 3.5, stoneMult: 1.0, jadeMult: 1.5, karmaAdd: 0.5,  luckAdd: 0.80, btAdd: 0.15, critAdd: 0,    critMultAdd: 0,   cdCut: 0,    desc: '【唯一先天至宝】铭刻三千大道法则！永久 3.5x 吐纳修为、1.5x 仙玉、+15% 破境成功率、+80% 宝物掉率！' },
-  { id: 'rel_hundun',  tier: 'supreme', unique: true, name: '混沌钟',   icon: '🔔', qiMult: 1.5, stoneMult: 4.0, jadeMult: 3.0, karmaAdd: 1.0,  luckAdd: 0.60, btAdd: 0.08, critAdd: 0,    critMultAdd: 0,   cdCut: 0.12, desc: '【唯一先天至宝】镇压鸿蒙气运！永久 4.0x 灵石、3.0x 仙玉、+100% 轮回道果、调息 -0.12s！' },
-  { id: 'rel_kaitian', tier: 'supreme', unique: true, name: '开天斧',   icon: '🪓', qiMult: 3.0, stoneMult: 3.0, jadeMult: 1.0, karmaAdd: 0.5,  luckAdd: 0.50, btAdd: 0.10, critAdd: 0.15, critMultAdd: 0.8, cdCut: 0,    desc: '【唯一先天至宝】盘古开天无上杀伐至宝！永久 3.0x 修为与灵石、顿悟暴击率 +15%、暴击倍率额外 +0.8x！' }
+  // 最高境界 · 三大先天至宝（唯一获取，随大境界提升自动共鸣变强，全境全图极低概率掉落！）
+  {
+    id: 'rel_yudie', tier: 'supreme', unique: true, name: '造化玉碟', icon: '💠',
+    qiMult: 5.0, qiGrowth: 1.22,
+    stoneMult: 1.0, stoneGrowth: 1.0,
+    jadeMult: 2.0, jadePerRealm: 0.35,
+    karmaAdd: 0.80, karmaPerRealm: 0.15,
+    luckAdd: 1.00, luckPerRealm: 0.25,
+    btAdd: 0.18, btPerRealm: 0.010, btCap: 0.45,
+    critAdd: 0, critPerRealm: 0, critCap: 0,
+    critMultAdd: 0, critMultPerRealm: 0,
+    cdCut: 0, cdPerRealm: 0, cdCap: 0,
+    petExpMult: 1.0, petExpPerRealm: 0,
+    desc: '【唯一先天至宝 · 随大境界自动成长】铭刻三千大道法则！每突破一大境界，修为倍率自动 ×1.22，并同步暴涨仙玉、气运、道果与破境成功率！'
+  },
+  {
+    id: 'rel_hundun', tier: 'supreme', unique: true, name: '混沌钟', icon: '🔔',
+    qiMult: 2.0, qiGrowth: 1.12,
+    stoneMult: 6.0, stoneGrowth: 1.25,
+    jadeMult: 3.5, jadePerRealm: 0.60,
+    karmaAdd: 1.50, karmaPerRealm: 0.30,
+    luckAdd: 0.80, luckPerRealm: 0.20,
+    btAdd: 0.10, btPerRealm: 0.006, btCap: 0.26,
+    critAdd: 0, critPerRealm: 0, critCap: 0,
+    critMultAdd: 0, critMultPerRealm: 0,
+    cdCut: 0.15, cdPerRealm: 0.01, cdCap: 0.40,
+    petExpMult: 1.0, petExpPerRealm: 0,
+    desc: '【唯一先天至宝 · 随大境界自动成长】镇压鸿蒙气运！每突破一大境界，灵石倍率自动 ×1.25、修为 ×1.12，并持续叠加仙玉、轮回道果与调息缩减！'
+  },
+  {
+    id: 'rel_kaitian', tier: 'supreme', unique: true, name: '开天斧', icon: '🪓',
+    qiMult: 4.0, qiGrowth: 1.20,
+    stoneMult: 4.0, stoneGrowth: 1.20,
+    jadeMult: 1.5, jadePerRealm: 0.25,
+    karmaAdd: 0.60, karmaPerRealm: 0.15,
+    luckAdd: 0.70, luckPerRealm: 0.18,
+    btAdd: 0.12, btPerRealm: 0.008, btCap: 0.32,
+    critAdd: 0.18, critPerRealm: 0.010, critCap: 0.45,
+    critMultAdd: 1.0, critMultPerRealm: 0.20,
+    cdCut: 0, cdPerRealm: 0, cdCap: 0,
+    petExpMult: 1.5, petExpPerRealm: 0.15,
+    desc: '【唯一先天至宝 · 随大境界自动成长】盘古开天无上杀伐至宝！每突破一大境界，修为与灵石双双 ×1.20，并大幅强化顿悟暴击、破境率与出战灵宠经验！'
+  }
 ];
 
 // 提升获取宝物概率的专属升级

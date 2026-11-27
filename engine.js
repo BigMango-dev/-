@@ -106,7 +106,7 @@ function rollRelicDrops(trials = 1, silent = false, rateBoost = 1) {
       icon: sup.icon,
       title: `寻得先天至宝「${sup.name}」`,
       subtitle: sup.desc,
-      rewards: ['唯一至宝 · 无需升级', '轮回永久保留', '诸天顶级气运']
+      rewards: ['唯一至宝 · 随大境界自动变强', '轮回永久保留', '诸天顶级气运']
     });
   }
 
@@ -351,7 +351,7 @@ function performMeditate(silent = false, batchScale = 1) {
     const veinPetMult = 1 + getVeinBonuses().petExp;
     const burnPetMult = burnedThisTick ? 1.6 : 1.0;
     const petExpGain = Math.max(1, Math.round(
-      (5 + state.realmIdx * 1.5) * (isCrit ? 1.35 : 1.0) * (pill ? 1.15 : 1.0) * (state.ascended ? 1.2 : 1.0) * veinPetMult * burnPetMult * scale
+      (5 + state.realmIdx * 1.5) * (isCrit ? 1.35 : 1.0) * (pill ? 1.15 : 1.0) * (state.ascended ? 1.2 : 1.0) * veinPetMult * burnPetMult * (relB.petExpMult || 1) * scale
     ));
     grantPetExp(state.activePet, petExpGain, silent);
   }

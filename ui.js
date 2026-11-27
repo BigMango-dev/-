@@ -1835,20 +1835,41 @@ function renderRelicsTab(container) {
     return `<span class="px-2 py-0.5 rounded-md text-[10px] font-mono border ${t.badgeCls}">${t.name}: ${txt}</span>`;
   }).join('');
 
-  // 2. 最高境界 · 三大先天至宝展示殿
+  // 2. 最高境界 · 三大先天至宝展示殿（实时展示当前大境界共鸣加成）
+  const curRealmObj = getRealm();
+  const shortRealmName = curRealmObj.name.length > 8 ? '创世大天尊境' : curRealmObj.name;
+  const fmtMultX = v => v >= 1000 ? `${fmt(v)}x` : v >= 100 ? `${v.toFixed(0)}x` : `${v.toFixed(2)}x`;
+
   const supremeCards = RELICS.filter(r => r.unique).map(rel => {
     const owned = (state.relics[rel.id] || 0) > 0;
+    const st = getSupremeRelicStats(rel, state.realmIdx);
+    const liveTags = [];
+    if (st.qiMult > 1.001)      liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-200">${fmtMultX(st.qiMult)} 修为</span>`);
+    if (st.stoneMult > 1.001)   liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200">${fmtMultX(st.stoneMult)} 灵石</span>`);
+    if (st.jadeMult > 1.001)    liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200">${fmtMultX(st.jadeMult)} 仙玉</span>`);
+    if (st.btAdd > 0)           liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-200">+${(st.btAdd * 100).toFixed(1)}% 破境</span>`);
+    if (st.luckAdd > 0)         liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-200">+${Math.round(st.luckAdd * 100)}% 气运</span>`);
+    if (st.karmaAdd > 0)        liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200">+${Math.round(st.karmaAdd * 100)}% 道果</span>`);
+    if (st.critAdd > 0)         liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-200">+${(st.critAdd * 100).toFixed(1)}% 暴击</span>`);
+    if (st.critMultAdd > 0)     liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-200">暴击+${st.critMultAdd.toFixed(1)}x</span>`);
+    if (st.cdCut > 0)           liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-200">-${st.cdCut.toFixed(2)}s 调息</span>`);
+    if (st.petExpMult > 1.001)  liveTags.push(`<span class="px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-200">${st.petExpMult.toFixed(2)}x 灵宠经验</span>`);
+
     return `
-      <div class="p-3.5 rounded-xl border ${owned ? 'border-amber-300 bg-gradient-to-br from-fuchsia-950/75 via-amber-950/50 to-indigo-950/75 shadow-[0_0_24px_rgba(253,224,71,0.3)]' : 'border-dashed border-amber-500/35 bg-xian-950/90 opacity-85'} flex flex-col justify-between gap-2">
+      <div class="p-3.5 rounded-xl border ${owned ? 'border-amber-300 bg-gradient-to-br from-fuchsia-950/75 via-amber-950/50 to-indigo-950/75 shadow-[0_0_24px_rgba(253,224,71,0.3)]' : 'border-dashed border-amber-500/35 bg-xian-950/90 opacity-85'} flex flex-col justify-between gap-2.5">
         <div>
           <div class="flex items-center justify-between gap-1">
             <span class="font-black text-sm ${owned ? 'text-amber-200' : 'text-slate-300'}">${rel.icon} ${rel.name}</span>
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${owned ? 'bg-amber-400/30 text-amber-100' : 'bg-slate-800 text-slate-400'}">${owned ? '已镇压气运' : '未寻得'}</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${owned ? 'bg-amber-400/30 text-amber-100' : 'bg-slate-800 text-slate-400'}">${owned ? `共鸣 第${state.realmIdx + 1}境` : '未寻得'}</span>
           </div>
           <p class="text-[11px] ${owned ? 'text-amber-100/90' : 'text-slate-400'} mt-1.5 leading-relaxed">${rel.desc}</p>
+          <div class="mt-2 pt-2 border-t border-white/10 space-y-1">
+            <div class="text-[10px] font-bold ${owned ? 'text-amber-300' : 'text-slate-400'}">✨ 当前「${shortRealmName}」威能：</div>
+            <div class="flex flex-wrap gap-1 text-[10px] font-mono">${liveTags.join('')}</div>
+          </div>
         </div>
         <div class="text-[10px] font-mono ${owned ? 'text-emerald-300 font-bold' : 'text-fuchsia-300/80'}">
-          ${owned ? '✨ 唯一至宝 · 永久生效中' : '🌌 全境界全界域极低概率掉落（无需升级）'}
+          ${owned ? '✨ 唯一至宝 · 随大境界突破自动暴涨' : '🌌 全境界全界域极低概率掉落（随境界成长）'}
         </div>
       </div>
     `;

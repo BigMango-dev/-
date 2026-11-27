@@ -375,23 +375,42 @@ function getPetBonuses() {
   return { qi, stone, jade, luck, crit, bt, cdCut };
 }
 
+// 计算先天至宝随当前大境界（realmIdx 0..26）自动成长后的实时属性
+function getSupremeRelicStats(rel, realmIdx = state.realmIdx) {
+  const r = Math.max(0, Math.floor(realmIdx || 0));
+  return {
+    qiMult: (rel.qiMult || 1) * Math.pow(rel.qiGrowth || 1, r),
+    stoneMult: (rel.stoneMult || 1) * Math.pow(rel.stoneGrowth || 1, r),
+    jadeMult: (rel.jadeMult || 1) + r * (rel.jadePerRealm || 0),
+    karmaAdd: (rel.karmaAdd || 0) + r * (rel.karmaPerRealm || 0),
+    luckAdd: (rel.luckAdd || 0) + r * (rel.luckPerRealm || 0),
+    btAdd: rel.btCap ? Math.min(rel.btCap, (rel.btAdd || 0) + r * (rel.btPerRealm || 0)) : ((rel.btAdd || 0) + r * (rel.btPerRealm || 0)),
+    critAdd: rel.critCap ? Math.min(rel.critCap, (rel.critAdd || 0) + r * (rel.critPerRealm || 0)) : ((rel.critAdd || 0) + r * (rel.critPerRealm || 0)),
+    critMultAdd: (rel.critMultAdd || 0) + r * (rel.critMultPerRealm || 0),
+    cdCut: rel.cdCap ? Math.min(rel.cdCap, (rel.cdCut || 0) + r * (rel.cdPerRealm || 0)) : ((rel.cdCut || 0) + r * (rel.cdPerRealm || 0)),
+    petExpMult: (rel.petExpMult || 1) + r * (rel.petExpPerRealm || 0)
+  };
+}
+
 // 汇总所有已获得宝物与三大先天至宝加成
 function getRelicBonuses() {
   let qiAdd = 0, stoneAdd = 0, jadeAdd = 0, luckAdd = 0, btAdd = 0, critAdd = 0, karmaAdd = 0, critMultAdd = 0, cdCut = 0;
-  let qiMult = 1, stoneMult = 1, jadeMult = 1;
+  let qiMult = 1, stoneMult = 1, jadeMult = 1, petExpMult = 1;
   for (const rel of RELICS) {
     const lv = state.relics[rel.id] || 0;
     if (lv <= 0) continue;
     if (rel.unique) {
-      qiMult *= (rel.qiMult || 1);
-      stoneMult *= (rel.stoneMult || 1);
-      jadeMult *= (rel.jadeMult || 1);
-      karmaAdd += (rel.karmaAdd || 0);
-      luckAdd += (rel.luckAdd || 0);
-      btAdd += (rel.btAdd || 0);
-      critAdd += (rel.critAdd || 0);
-      critMultAdd += (rel.critMultAdd || 0);
-      cdCut += (rel.cdCut || 0);
+      const st = getSupremeRelicStats(rel, state.realmIdx);
+      qiMult *= st.qiMult;
+      stoneMult *= st.stoneMult;
+      jadeMult *= st.jadeMult;
+      petExpMult *= st.petExpMult;
+      karmaAdd += st.karmaAdd;
+      luckAdd += st.luckAdd;
+      btAdd += st.btAdd;
+      critAdd += st.critAdd;
+      critMultAdd += st.critMultAdd;
+      cdCut += st.cdCut;
     } else {
       qiAdd += lv * (rel.qiPerLv || 0);
       stoneAdd += lv * (rel.stonePerLv || 0);
@@ -402,7 +421,7 @@ function getRelicBonuses() {
       karmaAdd += lv * (rel.karmaPerLv || 0);
     }
   }
-  return { qiAdd, stoneAdd, jadeAdd, luckAdd, btAdd, critAdd, karmaAdd, critMultAdd, cdCut, qiMult, stoneMult, jadeMult };
+  return { qiAdd, stoneAdd, jadeAdd, luckAdd, btAdd, critAdd, karmaAdd, critMultAdd, cdCut, qiMult, stoneMult, jadeMult, petExpMult };
 }
 
 // 综合宝物掉落概率倍率
