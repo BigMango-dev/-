@@ -283,13 +283,14 @@ function performMeditate(silent = false, batchScale = 1) {
     }
   }
 
-  // 血域魔体、灵宠与宝物暴击加成
+  // 逆天体质（血域魔体/混沌神体/鸿蒙至尊体）、灵宠与宝物暴击加成
   const hasBlood = state.physiques.includes('ph_blood');
+  const phB = getPhysiqueBonuses();
   const petB = getPetBonuses();
   const relB = getRelicBonuses();
-  const critChance = Math.min(0.75, (hasBlood ? 0.22 : 0.05) + petB.crit + relB.critAdd);
+  const critChance = Math.min(0.92, (hasBlood ? 0.22 : 0.05) + phB.critAdd + petB.crit + relB.critAdd);
   const isCrit = Math.random() < critChance;
-  const critMult = isCrit ? ((hasBlood ? 2.1 : 1.8) + relB.critMultAdd) : 1.0;
+  const critMult = isCrit ? ((hasBlood ? 2.1 : 1.8) + phB.critMultAdd + relB.critMultAdd) : 1.0;
 
   // 🔥 燃石修炼超载判定：燃烧海量灵石换取 2.5x 修为与 1.6x 出战灵宠经验
   let burnedThisTick = false;
@@ -351,7 +352,7 @@ function performMeditate(silent = false, batchScale = 1) {
     const veinPetMult = 1 + getVeinBonuses().petExp;
     const burnPetMult = burnedThisTick ? 1.6 : 1.0;
     const petExpGain = Math.max(1, Math.round(
-      (5 + state.realmIdx * 1.5) * (isCrit ? 1.35 : 1.0) * (pill ? 1.15 : 1.0) * (state.ascended ? 1.2 : 1.0) * veinPetMult * burnPetMult * (relB.petExpMult || 1) * scale
+      (5 + state.realmIdx * 1.5) * (isCrit ? 1.35 : 1.0) * (pill ? 1.15 : 1.0) * (state.ascended ? 1.2 : 1.0) * veinPetMult * burnPetMult * (relB.petExpMult || 1) * (phB.petExpMult || 1) * scale
     ));
     grantPetExp(state.activePet, petExpGain, silent);
   }
@@ -392,11 +393,7 @@ function attemptBreakthrough() {
   if (state.subIdx === 3 && !isAtMortalPeak()) {
     chance = state.realmIdx >= 9 ? chance * 0.65 : (state.realmIdx >= 1 ? Math.max(0.05, chance - 0.10) : chance);
   }
-  chance += state.physiques.length * 0.04;
-  if (state.physiques.includes('ph_dao')) chance += 0.04;
-  if (state.physiques.includes('ph_eternal')) chance += 0.08;
-  if (state.physiques.includes('ph_chaos')) chance += 0.12;
-  if (state.physiques.includes('ph_hongmeng')) chance += 0.18;
+  chance += state.physiques.length * 0.04 + getPhysiqueBonuses().btAdd;
   if (usedGuard) chance += (state.realmIdx >= 9 ? 0.18 : 0.25);
   chance += getPetBonuses().bt + getRelicBonuses().btAdd + getVeinBonuses().bt;
   chance += (state.btPity || 0);

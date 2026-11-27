@@ -932,12 +932,14 @@ function showPhysiqueAwakeningAnimation(ph, isReplay = false) {
   document.getElementById('pa-title').textContent = `${ph.icon} ${ph.name}`;
   document.getElementById('pa-subtitle').textContent = ph.desc;
 
+  const liveSt = getPhysiqueLiveStats(ph, state.realmIdx);
   const rewards = [
     `解锁至高神诀《${ph.art.name}》`,
-    `+${Math.round(ph.stoneBonus * 100)}% 灵石`,
-    `+${Math.round(ph.jadeBonus * 100)}% 仙玉`,
-    `+${Math.round(ph.karmaBonus * 100)}% 道果`,
-    `+${Math.round(ph.qiBonus * 100)}% 修为`
+    ...(liveSt.qiMult > 1.001 ? [`独立 ${liveSt.qiMult >= 100 ? fmt(liveSt.qiMult) : liveSt.qiMult.toFixed(2)}x 修为/灵石`] : []),
+    `+${fmt(Math.round(liveSt.stone * 100))}% 灵石`,
+    `+${fmt(Math.round(liveSt.jade * 100))}% 仙玉`,
+    `+${fmt(Math.round(liveSt.qi * 100))}% 修为`,
+    ...(liveSt.btAdd > 0 ? [`+${(liveSt.btAdd * 100).toFixed(1)}% 破境`] : [])
   ];
   document.getElementById('pa-rewards').innerHTML = rewards.map(r =>
     `<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-black/50 border border-amber-300/50 text-amber-100">${r}</span>`
@@ -2172,6 +2174,9 @@ function renderPhysiquesTab(container) {
 
   const mult = getPhysiqueCostMultiplier();
   const baseCount = getUnlockedBasePhysiqueCount();
+  const curRealmObj = getRealm();
+  const shortRealmName = curRealmObj.name.length > 8 ? '创世大天尊境' : curRealmObj.name;
+  const fmtMultX = v => v >= 1000 ? `${fmt(v)}x` : v >= 100 ? `${v.toFixed(0)}x` : `${v.toFixed(2)}x`;
 
   const buildCard = (ph) => {
     const owned = state.physiques.includes(ph.id);
@@ -2180,9 +2185,10 @@ function renderPhysiquesTab(container) {
     const cost = getPhysiqueActualCost(ph);
     const canBuy = !owned && !isLocked && state.karma >= cost.karma && state.jade >= cost.jade;
     const isSup = Boolean(ph.isSupreme);
+    const st = getPhysiqueLiveStats(ph, state.realmIdx);
 
     const cardBorder = owned
-      ? 'bg-fuchsia-500/15 border-fuchsia-400/60'
+      ? (isSup ? 'bg-gradient-to-br from-fuchsia-950/75 via-amber-950/45 to-indigo-950/75 border-amber-300 shadow-[0_0_24px_rgba(253,224,71,0.28)]' : 'bg-fuchsia-500/15 border-fuchsia-400/60')
       : isLocked
         ? 'bg-xian-950/90 border-dashed border-slate-700/90 opacity-80'
         : isSup
@@ -2190,12 +2196,24 @@ function renderPhysiquesTab(container) {
           : 'bg-xian-850 border-slate-800';
 
     const statusBadge = owned
-      ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/25 text-emerald-300">已觉醒</span>'
+      ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/25 text-emerald-300">共鸣 第${state.realmIdx + 1}境</span>`
       : isLocked
         ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-800 text-slate-400">🔒 未解封</span>'
         : isSup
           ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-400/25 text-amber-200">✨ 已解封</span>'
           : '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-xian-950 text-fuchsia-300">可洗髓</span>';
+
+    const epicPills = [];
+    if (st.qiMult > 1.001)     epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-cyan-500/25 border border-cyan-400/40 text-cyan-100 font-bold">独立 ${fmtMultX(st.qiMult)} 修为</span>`);
+    if (st.stoneMult > 1.001)  epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-amber-500/25 border border-amber-400/40 text-amber-100 font-bold">独立 ${fmtMultX(st.stoneMult)} 灵石</span>`);
+    if (st.jadeMult > 1.001)   epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-emerald-500/25 border border-emerald-400/40 text-emerald-100 font-bold">独立 ${fmtMultX(st.jadeMult)} 仙玉</span>`);
+    if (st.karmaMult > 1.001)  epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-fuchsia-500/25 border border-fuchsia-400/40 text-fuchsia-100 font-bold">独立 ${fmtMultX(st.karmaMult)} 道果</span>`);
+    if (st.petExpMult > 1.001) epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-teal-500/25 border border-teal-400/40 text-teal-100 font-bold">${fmtMultX(st.petExpMult)} 灵宠经验</span>`);
+    if (st.btAdd > 0)          epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-200">+${(st.btAdd * 100).toFixed(1)}% 破境</span>`);
+    if (st.luckAdd > 0)        epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200">+${Math.round(st.luckAdd * 100)}% 气运</span>`);
+    if (st.critAdd > 0)        epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-200">+${(st.critAdd * 100).toFixed(1)}% 暴击</span>`);
+    if (st.critMultAdd > 0)    epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-200">暴伤+${st.critMultAdd.toFixed(1)}x</span>`);
+    if (st.cdCut > 0)          epicPills.push(`<span class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-200">-${st.cdCut.toFixed(2)}s 调息</span>`);
 
     return `
       <div class="p-3.5 rounded-xl border ${cardBorder} flex flex-col justify-between gap-3">
@@ -2205,11 +2223,15 @@ function renderPhysiquesTab(container) {
             ${statusBadge}
           </div>
           <p class="text-xs text-slate-400 mt-1 leading-relaxed">${ph.desc}</p>
-          <div class="flex flex-wrap gap-1.5 mt-2 text-[10px] font-mono">
-            <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300">+${Math.round(ph.stoneBonus * 100)}% 灵石</span>
-            <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300">+${Math.round(ph.jadeBonus * 100)}% 仙玉</span>
-            <span class="px-2 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300">+${Math.round(ph.karmaBonus * 100)}% 道果</span>
-            <span class="px-2 py-0.5 rounded bg-teal-500/15 text-teal-300">+${Math.round(ph.qiBonus * 100)}% 修为</span>
+          <div class="mt-2 pt-2 border-t border-white/10 space-y-1.5">
+            <div class="text-[10px] font-bold ${isSup ? 'text-amber-300' : 'text-teal-300'}">✨ 当前「${shortRealmName}」实时威能（随大境界自动成长）：</div>
+            ${epicPills.length ? `<div class="flex flex-wrap gap-1 text-[10px] font-mono">${epicPills.join('')}</div>` : ''}
+            <div class="flex flex-wrap gap-1 text-[10px] font-mono">
+              <span class="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">+${fmt(Math.round(st.stone * 100))}% 灵石</span>
+              <span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300">+${fmt(Math.round(st.jade * 100))}% 仙玉</span>
+              <span class="px-1.5 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300">+${fmt(Math.round(st.karma * 100))}% 道果</span>
+              <span class="px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-300">+${fmt(Math.round(st.qi * 100))}% 修为</span>
+            </div>
           </div>
           <div class="text-[11px] text-amber-200/90 mt-2">✨ 解锁专属神诀：<strong>《${ph.art.name}》</strong></div>
         </div>

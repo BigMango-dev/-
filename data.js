@@ -49,67 +49,101 @@ const PHYSIQUES = [
     id: 'ph_heart', name: '七窍玲珑心', icon: '💠', tierTag: '绝世灵体',
     baseKarma: 4, baseJade: 80,
     stoneBonus: 1.20, jadeBonus: 1.50, karmaBonus: 0.45, qiBonus: 0.55,
-    desc: '天生七窍通明，洞察天机。巨幅提升仙玉获取与机缘秘宝掉率，破境更易顿悟。',
-    art: { id: 'pa_heart', name: '玲珑天心诀', baseCost: 15, scale: 1.55, maxLv: 20, currency: 'jade', stonePerLv: 0.18, qiPerLv: 0.14, desc: '每级 +18% 灵石产出、+14% 修为感悟（消耗仙玉）。' }
+    realmGrowth: 1.12, luckBase: 0.25, luckPerRealm: 0.06,
+    desc: '天生七窍通明，洞察天机。所有加成随大境界提升自动共鸣变强（每大境 ×1.12），大幅增强仙玉与寻宝气运！',
+    art: { id: 'pa_heart', name: '玲珑天心诀', baseCost: 15, scale: 1.55, maxLv: 20, currency: 'jade', stonePerLv: 0.18, qiPerLv: 0.14, desc: '每级 +18% 灵石产出、+14% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
     id: 'ph_blood', name: '血域魔体', icon: '🩸', tierTag: '太古魔体',
     baseKarma: 6, baseJade: 120,
     stoneBonus: 2.20, jadeBonus: 0.80, karmaBonus: 0.50, qiBonus: 0.75,
-    desc: '以战养道，掠夺八荒灵脉。海量提升灵石产出，吐纳顿悟暴击率跃升至 22%（2.1倍收益）。',
-    art: { id: 'pa_blood', name: '修罗血神经', baseCost: 20, scale: 1.55, maxLv: 20, currency: 'jade', stonePerLv: 0.26, qiPerLv: 0.16, desc: '每级 +26% 灵石产出、+16% 修为感悟（消耗仙玉）。' }
+    realmGrowth: 1.13, critPerRealm: 0.004, critCap: 0.12,
+    desc: '以战养道，掠夺八荒灵脉。加成随大境界自动变强（每大境 ×1.13），顿悟暴击率跃升至 22% 并随境界持续精进！',
+    art: { id: 'pa_blood', name: '修罗血神经', baseCost: 20, scale: 1.55, maxLv: 20, currency: 'jade', stonePerLv: 0.26, qiPerLv: 0.16, desc: '每级 +26% 灵石产出、+16% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
     id: 'ph_bone', name: '至尊骨', icon: '🦴', tierTag: '天生至尊',
     baseKarma: 9, baseJade: 180,
     stoneBonus: 2.00, jadeBonus: 1.40, karmaBonus: 0.75, qiBonus: 0.90,
-    desc: '胸生至尊宝骨，铭刻上古劫光宝术。全资源大幅暴涨，轮回道果收益剧增。',
-    art: { id: 'pa_bone', name: '至尊劫光经', baseCost: 25, scale: 1.58, maxLv: 20, currency: 'jade', stonePerLv: 0.24, qiPerLv: 0.18, desc: '每级 +24% 灵石产出、+18% 修为感悟（消耗仙玉）。' }
+    realmGrowth: 1.14,
+    desc: '胸生至尊宝骨，铭刻上古劫光宝术。全资源随大境界自动暴涨（每大境 ×1.14），轮回道果收益剧增！',
+    art: { id: 'pa_bone', name: '至尊劫光经', baseCost: 25, scale: 1.58, maxLv: 20, currency: 'jade', stonePerLv: 0.24, qiPerLv: 0.18, desc: '每级 +24% 灵石产出、+18% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
     id: 'ph_eye', name: '重瞳', icon: '👁️', tierTag: '无敌重瞳',
     baseKarma: 12, baseJade: 240,
     stoneBonus: 2.10, jadeBonus: 2.40, karmaBonus: 0.85, qiBonus: 1.05,
-    desc: '重瞳本是无敌路，一眼勘破虚妄洞府，仙玉产出与秘宝寻获率呈倍暴增。',
-    art: { id: 'pa_eye', name: '重瞳开天诀', baseCost: 32, scale: 1.58, maxLv: 20, currency: 'jade', stonePerLv: 0.26, qiPerLv: 0.20, desc: '每级 +26% 灵石产出、+20% 修为感悟（消耗仙玉）。' }
+    realmGrowth: 1.15, luckBase: 0.35, luckPerRealm: 0.08,
+    desc: '重瞳本是无敌路，一眼勘破虚妄洞府！加成随大境界自动变强（每大境 ×1.15），仙玉与寻宝气运呈倍暴增！',
+    art: { id: 'pa_eye', name: '重瞳开天诀', baseCost: 32, scale: 1.58, maxLv: 20, currency: 'jade', stonePerLv: 0.26, qiPerLv: 0.20, desc: '每级 +26% 灵石产出、+20% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
     id: 'ph_dao', name: '先天道胎', icon: '☯️', tierTag: '近道圣躯',
     baseKarma: 16, baseJade: 320,
     stoneBonus: 2.60, jadeBonus: 1.80, karmaBonus: 1.00, qiBonus: 1.40,
-    desc: '先天近道之躯，天然契合天地法则，永久缩减调息 -0.20s，并额外提升破境成功率。',
-    art: { id: 'pa_dao', name: '先天大道经', baseCost: 40, scale: 1.60, maxLv: 20, currency: 'jade', stonePerLv: 0.30, qiPerLv: 0.24, desc: '每级 +30% 灵石产出、+24% 修为感悟（消耗仙玉）。' }
+    realmGrowth: 1.16, btBase: 0.04, btPerRealm: 0.002, btCap: 0.10, cdCut: 0.20,
+    desc: '先天近道之躯，天然契合天地法则！加成随大境界自动变强（每大境 ×1.16），永久缩减调息 -0.20s 并随境界提升破境成功率！',
+    art: { id: 'pa_dao', name: '先天大道经', baseCost: 40, scale: 1.60, maxLv: 20, currency: 'jade', stonePerLv: 0.30, qiPerLv: 0.24, desc: '每级 +30% 灵石产出、+24% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
     id: 'ph_ancient', name: '荒古圣体', icon: '⚜️', tierTag: '万古圣体',
     baseKarma: 22, baseJade: 450,
     stoneBonus: 4.20, jadeBonus: 1.80, karmaBonus: 1.20, qiBonus: 1.50,
-    desc: '黄金气血冲霄，大成圣体可叫板古之大帝！提供极其恐怖的灵石与秘境资源暴击增幅。',
-    art: { id: 'pa_ancient', name: '荒古镇世诀', baseCost: 50, scale: 1.60, maxLv: 20, currency: 'jade', stonePerLv: 0.42, qiPerLv: 0.25, desc: '每级 +42% 灵石产出、+25% 修为感悟（消耗仙玉）。' }
+    realmGrowth: 1.18,
+    desc: '黄金气血冲霄，大成圣体可叫板古之大帝！加成随大境界狂飙（每大境 ×1.18），灵石与修为爆发傲视基础圣体！',
+    art: { id: 'pa_ancient', name: '荒古镇世诀', baseCost: 50, scale: 1.60, maxLv: 20, currency: 'jade', stonePerLv: 0.42, qiPerLv: 0.25, desc: '每级 +42% 灵石产出、+25% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
+  // ==================== 三大至高终极圣体（史诗级加强：独立乘区 + 随大境界指数狂飙 + 逆天专属特性！） ====================
   {
     id: 'ph_eternal', name: '永恒仙体', icon: '🌟', tierTag: '至高仙体 · 阶一',
     isSupreme: true,
     baseKarma: 30, baseJade: 650,
-    stoneBonus: 12.00, jadeBonus: 9.00, karmaBonus: 3.50, qiBonus: 5.50,
-    desc: '【需集齐前六圣体解锁】仙辉永驻，万劫不灭！灵石仙玉十倍狂飙，额外强化仙界破境成功率 +8%！',
-    art: { id: 'pa_eternal', name: '永恒不朽经', baseCost: 65, scale: 1.62, maxLv: 25, currency: 'jade', stonePerLv: 1.20, qiPerLv: 0.80, desc: '每级 +120% 灵石产出、+80% 修为感悟（消耗仙玉）。' }
+    stoneBonus: 20.00, jadeBonus: 15.00, karmaBonus: 6.00, qiBonus: 10.00,
+    realmGrowth: 1.20,
+    qiMultBase: 2.5, qiMultGrowth: 1.18,
+    stoneMultBase: 2.5, stoneMultGrowth: 1.18,
+    jadeMultBase: 2.0, jadeMultPerRealm: 0.25,
+    karmaMultBase: 1.8, karmaMultPerRealm: 0.15,
+    btBase: 0.10, btPerRealm: 0.005, btCap: 0.22,
+    luckBase: 1.00, luckPerRealm: 0.20,
+    petExpMultBase: 1.5, petExpPerRealm: 0.10,
+    desc: '【史诗级加强 · 独立乘区】仙辉永驻，万劫不灭！独立修为/灵石乘区起步 2.5x 且每突破一大境再 ×1.18；仙玉、道果、灵宠经验、气运与破境率同步随境界暴涨！',
+    art: { id: 'pa_eternal', name: '永恒不朽经', baseCost: 65, scale: 1.62, maxLv: 25, currency: 'jade', stonePerLv: 1.50, qiPerLv: 1.00, desc: '每级 +150% 灵石产出、+100% 修为感悟（随大境界大幅增幅，消耗仙玉）。' }
   },
   {
     id: 'ph_chaos', name: '混沌神体', icon: '🌌', tierTag: '太初神体 · 阶二',
     isSupreme: true,
     baseKarma: 45, baseJade: 950,
-    stoneBonus: 25.00, jadeBonus: 16.00, karmaBonus: 6.50, qiBonus: 12.00,
-    desc: '【需先觉醒永恒仙体】身融混沌海，吞吐诸天星河！全资源数十倍暴增，额外提供 +12% 破境护道成功率！',
-    art: { id: 'pa_chaos', name: '混沌神诀', baseCost: 85, scale: 1.62, maxLv: 25, currency: 'jade', stonePerLv: 2.20, qiPerLv: 1.50, desc: '混沌神体专属至高神诀，每级 +220% 灵石、+150% 修为。' }
+    stoneBonus: 50.00, jadeBonus: 30.00, karmaBonus: 12.00, qiBonus: 25.00,
+    realmGrowth: 1.24,
+    qiMultBase: 4.0, qiMultGrowth: 1.22,
+    stoneMultBase: 4.0, stoneMultGrowth: 1.22,
+    jadeMultBase: 3.0, jadeMultPerRealm: 0.45,
+    karmaMultBase: 2.5, karmaMultPerRealm: 0.25,
+    btBase: 0.14, btPerRealm: 0.006, btCap: 0.28,
+    critBase: 0.12, critMultBase: 1.2, critMultPerRealm: 0.15,
+    luckBase: 1.80, luckPerRealm: 0.35,
+    petExpMultBase: 2.0, petExpPerRealm: 0.15,
+    desc: '【史诗级加强 · 独立乘区】身融混沌海，吞吐诸天星河！独立修为/灵石乘区起步 4.0x 且每大境 ×1.22；自带高额顿悟暴击与暴伤成长，破境、仙玉、道果与灵宠经验全面飞升！',
+    art: { id: 'pa_chaos', name: '混沌神诀', baseCost: 85, scale: 1.62, maxLv: 25, currency: 'jade', stonePerLv: 2.80, qiPerLv: 2.00, desc: '混沌神体专属至高神诀，每级 +280% 灵石、+200% 修为（随大境界大幅增幅）。' }
   },
   {
     id: 'ph_hongmeng', name: '鸿蒙至尊体', icon: '👑', tierTag: '万界第一 · 终极',
     isSupreme: true,
     baseKarma: 70, baseJade: 1500,
-    stoneBonus: 50.00, jadeBonus: 30.00, karmaBonus: 12.00, qiBonus: 25.00,
-    desc: '【需先觉醒混沌神体】开天辟地第一无上圣体！执掌鸿蒙紫气，全资源暴涨数十倍，额外提供 +18% 破境成功率！',
-    art: { id: 'pa_hongmeng', name: '鸿蒙造化经', baseCost: 110, scale: 1.65, maxLv: 30, currency: 'jade', stonePerLv: 4.00, qiPerLv: 2.80, desc: '鸿蒙至尊体专属无上圣法，每级 +400% 灵石、+280% 修为。' }
+    stoneBonus: 120.00, jadeBonus: 60.00, karmaBonus: 25.00, qiBonus: 60.00,
+    realmGrowth: 1.28,
+    qiMultBase: 8.0, qiMultGrowth: 1.26,
+    stoneMultBase: 8.0, stoneMultGrowth: 1.26,
+    jadeMultBase: 5.0, jadeMultPerRealm: 0.80,
+    karmaMultBase: 4.0, karmaMultPerRealm: 0.40,
+    btBase: 0.20, btPerRealm: 0.008, btCap: 0.38,
+    critBase: 0.18, critMultBase: 2.0, critMultPerRealm: 0.25,
+    cdCut: 0.18,
+    luckBase: 3.00, luckPerRealm: 0.60,
+    petExpMultBase: 3.0, petExpPerRealm: 0.25,
+    desc: '【终极史诗 · 万界第一独立乘区】开天辟地第一无上圣体！独立修为/灵石乘区起步 8.0x 且每大境 ×1.26，永久缩减调息 -0.18s，破境、暴击、仙玉、道果、气运与灵宠经验全维度统治诸天！',
+    art: { id: 'pa_hongmeng', name: '鸿蒙造化经', baseCost: 110, scale: 1.65, maxLv: 30, currency: 'jade', stonePerLv: 5.00, qiPerLv: 3.50, desc: '鸿蒙至尊体专属无上圣法，每级 +500% 灵石、+350% 修为（随大境界大幅增幅）。' }
   }
 ];
 

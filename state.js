@@ -210,12 +210,8 @@ function getBreakthroughChance() {
     }
   }
 
-  // 逆天体质护道加成：每种体质 +4%，顶级圣体额外大幅加持
-  chance += state.physiques.length * 0.04;
-  if (state.physiques.includes('ph_dao')) chance += 0.04;
-  if (state.physiques.includes('ph_eternal')) chance += 0.08;
-  if (state.physiques.includes('ph_chaos')) chance += 0.12;
-  if (state.physiques.includes('ph_hongmeng')) chance += 0.18;
+  // 逆天体质护道加成：每种体质基础 +4% + 体质专属随境界成长的破境加成
+  chance += state.physiques.length * 0.04 + getPhysiqueBonuses().btAdd;
 
   // 仙玉护道加成
   const guardCost = getJadeGuardCost();
@@ -253,7 +249,7 @@ function canAscendNow() {
 function getCooldownSeconds() {
   const base = 1.80;
   const artCut = getArtifact().cdCut;
-  const daoCut = state.physiques.includes('ph_dao') ? 0.20 : 0;
+  const daoCut = getPhysiqueBonuses().cdCut;
   const extraCut = getPetBonuses().cdCut + getRelicBonuses().cdCut;
   const hardFloor = Math.max(0.20, 0.60 - state.karmaPerks.k_speed * 0.06);
   return Math.max(hardFloor, base - artCut - daoCut - extraCut);
@@ -314,23 +310,64 @@ function getPhysiqueLockReason(ph) {
   return null;
 }
 
-// 汇总所有已觉醒体质与专属功法的加成（加法池，避免指数爆炸）
+// 计算单个逆天体质随当前大境界（realmIdx 0..26）自动成长后的实时属性
+function getPhysiqueLiveStats(ph, realmIdx = state.realmIdx) {
+  const r = Math.max(0, Math.floor(realmIdx || 0));
+  const scale = Math.pow(ph.realmGrowth || 1.12, r);
+  const btRaw = (ph.btBase || 0) + r * (ph.btPerRealm || 0);
+  const critRaw = (ph.critBase || 0) + r * (ph.critPerRealm || 0);
+  return {
+    stone: ph.stoneBonus * scale,
+    jade: ph.jadeBonus * scale,
+    karma: ph.karmaBonus * scale,
+    qi: ph.qiBonus * scale,
+    qiMult: ph.qiMultBase ? ph.qiMultBase * Math.pow(ph.qiMultGrowth || 1, r) : 1,
+    stoneMult: ph.stoneMultBase ? ph.stoneMultBase * Math.pow(ph.stoneMultGrowth || 1, r) : 1,
+    jadeMult: ph.jadeMultBase ? ph.jadeMultBase + r * (ph.jadeMultPerRealm || 0) : 1,
+    karmaMult: ph.karmaMultBase ? ph.karmaMultBase + r * (ph.karmaMultPerRealm || 0) : 1,
+    petExpMult: ph.petExpMultBase ? ph.petExpMultBase + r * (ph.petExpPerRealm || 0) : 1,
+    btAdd: ph.btCap ? Math.min(ph.btCap, btRaw) : btRaw,
+    critAdd: ph.critCap ? Math.min(ph.critCap, critRaw) : critRaw,
+    critMultAdd: (ph.critMultBase || 0) + r * (ph.critMultPerRealm || 0),
+    luckAdd: (ph.luckBase || 0) + r * (ph.luckPerRealm || 0),
+    cdCut: ph.cdCut || 0
+  };
+}
+
+// 汇总所有已觉醒体质与专属功法的实时加成（基础圣体随境界成长 + 终极三圣体享独立史诗乘区！）
 function getPhysiqueBonuses() {
   let stone = 0, jade = 0, karma = 0, qi = 0;
+  let btAdd = 0, critAdd = 0, critMultAdd = 0, luckAdd = 0, cdCut = 0;
+  let qiMult = 1, stoneMult = 1, jadeMult = 1, karmaMult = 1, petExpMult = 1;
+  const r = Math.max(0, Math.floor(state.realmIdx || 0));
+  const artRealmBoost = 1 + r * 0.25;
+
   for (const pid of state.physiques) {
     const ph = PHYSIQUES.find(x => x.id === pid);
     if (!ph) continue;
-    stone += ph.stoneBonus;
-    jade += ph.jadeBonus;
-    karma += ph.karmaBonus;
-    qi += ph.qiBonus;
+    const st = getPhysiqueLiveStats(ph, r);
+    stone += st.stone;
+    jade += st.jade;
+    karma += st.karma;
+    qi += st.qi;
+    btAdd += st.btAdd;
+    critAdd += st.critAdd;
+    critMultAdd += st.critMultAdd;
+    luckAdd += st.luckAdd;
+    cdCut += st.cdCut;
+    qiMult *= st.qiMult;
+    stoneMult *= st.stoneMult;
+    jadeMult *= st.jadeMult;
+    karmaMult *= st.karmaMult;
+    petExpMult *= st.petExpMult;
+
     const artLv = state.physiqueArts[ph.art.id] || 0;
     if (artLv > 0) {
-      stone += artLv * ph.art.stonePerLv;
-      qi += artLv * ph.art.qiPerLv;
+      stone += artLv * ph.art.stonePerLv * artRealmBoost;
+      qi += artLv * ph.art.qiPerLv * artRealmBoost;
     }
   }
-  return { stone, jade, karma, qi };
+  return { stone, jade, karma, qi, btAdd, critAdd, critMultAdd, luckAdd, cdCut, qiMult, stoneMult, jadeMult, karmaMult, petExpMult };
 }
 
 function getArtsFlatGains() {
@@ -433,7 +470,7 @@ function getTreasureLuckMultiplier() {
   const pb = getPetBonuses();
   const rb = getRelicBonuses();
   const karmaLuck = (state.karmaPerks.k_luck || 0) * 0.25;
-  return 1 + upgLuck + pb.luck + rb.luckAdd + karmaLuck + getVeinBonuses().luck;
+  return 1 + upgLuck + pb.luck + rb.luckAdd + karmaLuck + getVeinBonuses().luck + getPhysiqueBonuses().luckAdd;
 }
 
 // 获取某个品阶当前的实时掉率
@@ -457,7 +494,7 @@ function getPetLuckMultiplier() {
   }
   const pb = getPetBonuses();
   const karmaLuck = (state.karmaPerks.k_luck || 0) * 0.20;
-  return 1 + upgLuck + pb.luck * 0.5 + karmaLuck + getVeinBonuses().luck;
+  return 1 + upgLuck + pb.luck * 0.5 + karmaLuck + getVeinBonuses().luck + getPhysiqueBonuses().luckAdd * 0.6;
 }
 
 // 获取某个灵宠品阶的实时结缘概率
@@ -499,7 +536,7 @@ function getQiMultiplier() {
   const relB = getRelicBonuses();
   const linearPerm = 1 + state.prestige * 0.20 + state.karmaPerks.k_qi * 0.15 + pb.qi + petB.qi + relB.qiAdd + getVeinBonuses().qi;
   const ascendMult = state.ascended ? 1.50 : 1.0;
-  return art.qiMult * (pill ? pill.qiMult : 1) * linearPerm * ascendMult * relB.qiMult;
+  return art.qiMult * (pill ? pill.qiMult : 1) * linearPerm * ascendMult * relB.qiMult * pb.qiMult;
 }
 
 function getStoneMultiplier() {
@@ -510,14 +547,14 @@ function getStoneMultiplier() {
   const relB = getRelicBonuses();
   const linearPerm = 1 + state.prestige * 0.25 + state.karmaPerks.k_stone * 0.20 + pb.stone + petB.stone + relB.stoneAdd;
   const ascendMult = state.ascended ? 1.60 : 1.0;
-  return art.stoneMult * (pill ? pill.stoneMult : 1) * linearPerm * ascendMult * relB.stoneMult;
+  return art.stoneMult * (pill ? pill.stoneMult : 1) * linearPerm * ascendMult * relB.stoneMult * pb.stoneMult;
 }
 
 function getJadeMultiplier() {
   const pb = getPhysiqueBonuses();
   const petB = getPetBonuses();
   const relB = getRelicBonuses();
-  return (1 + state.karmaPerks.k_jade * 0.15 + pb.jade + petB.jade + relB.jadeAdd) * relB.jadeMult;
+  return (1 + state.karmaPerks.k_jade * 0.15 + pb.jade + petB.jade + relB.jadeAdd) * relB.jadeMult * pb.jadeMult;
 }
 
 function getKarmaOnReincarnate() {
@@ -525,7 +562,7 @@ function getKarmaOnReincarnate() {
   const pb = getPhysiqueBonuses();
   const relB = getRelicBonuses();
   const base = Math.floor(1 + Math.pow(state.realmIdx - 3, 1.55) + state.subIdx * 0.4 + (state.ascended ? 4 : 0));
-  return Math.max(1, Math.floor(base * (1 + pb.karma + relB.karmaAdd)));
+  return Math.max(1, Math.floor(base * (1 + pb.karma + relB.karmaAdd) * pb.karmaMult));
 }
 
 function getNextRealmLabel() {
