@@ -1107,7 +1107,17 @@ function flushHUD() {
   setText('qiM', DOM.qiMult, `${fmt(getQiMultiplier())}x 修为`);
   setText('eqArt', DOM.eqArtifact, getArtifact().name);
   const apObj = state.activePet ? SPIRIT_PETS.find(x => x.id === state.activePet) : null;
-  const apLabel = apObj && (state.pets[apObj.id] || 0) > 0 ? `${apObj.icon} ${apObj.name} Lv.${state.pets[apObj.id]}` : '未出战';
+  let apLabel = '未出战';
+  if (apObj && (state.pets[apObj.id] || 0) > 0) {
+    const pLv = state.pets[apObj.id];
+    if (pLv >= PET_MAX_LEVEL) {
+      apLabel = `${apObj.icon} ${apObj.name} Lv.100(满)`;
+    } else {
+      const pReq = getPetExpRequired(apObj.id, pLv);
+      const pPct = Math.min(99.9, ((state.petExp[apObj.id] || 0) / Math.max(1, pReq)) * 100).toFixed(0);
+      apLabel = `${apObj.icon} ${apObj.name} Lv.${pLv} (${pPct}%)`;
+    }
+  }
   setText('actPet', DOM.activePet, apLabel);
   setText('nextHint', DOM.nextRealmHint, getNextRealmLabel());
   setText('ticks', DOM.totalTicks, fmt(state.totalTicks));
@@ -1233,19 +1243,29 @@ function refreshAffordability() {
       }
     });
   } else if (activeTab === 'pets') {
-    DOM.tabArea.querySelectorAll('[data-pet-buy]').forEach(btn => {
-      const pet = SPIRIT_PETS.find(x => x.id === btn.dataset.petBuy);
-      if (!pet) return;
-      const lv = state.pets[pet.id] || 0;
-      if (lv === 0) {
-        const cur = pet.unlockCur === 'jade' ? state.jade : state.stones;
-        btn.disabled = cur < pet.unlockCost;
+    DOM.tabArea.querySelectorAll('[data-pet-luck-buy]').forEach(btn => {
+      const u = PET_LUCK_UPGRADES.find(x => x.id === btn.dataset.petLuckBuy);
+      if (!u) return;
+      const cur = u.currency === 'jade' ? state.jade : state.stones;
+      const unit = u.currency === 'jade' ? '💎' : '灵石';
+      const calc = calcBulk(u.baseCost, u.scale, state.petLuckUpgrades[u.id] || 0, u.maxLv, cur);
+      btn.disabled = !calc.canBuy;
+      btn.textContent = fmtBulkBtn(calc, '提升结缘率', unit);
+    });
+    DOM.tabArea.querySelectorAll('[data-pet-exp-bar]').forEach(bar => {
+      const pid = bar.dataset.petExpBar;
+      const lv = state.pets[pid] || 0;
+      if (lv <= 0) return;
+      const txtEl = DOM.tabArea.querySelector(`[data-pet-exp-text="${pid}"]`);
+      if (lv >= PET_MAX_LEVEL) {
+        bar.style.transform = 'scaleX(1)';
+        if (txtEl) txtEl.textContent = 'Lv.100 满级大圆满';
       } else {
-        const cur = pet.lvCur === 'jade' ? state.jade : state.stones;
-        const unit = pet.lvCur === 'jade' ? '💎' : '灵石';
-        const calc = calcBulk(pet.baseLvCost, pet.lvScale, lv - 1, pet.maxLv - 1, cur);
-        btn.disabled = !calc.canBuy;
-        btn.textContent = fmtBulkBtn(calc, '投喂进阶', unit);
+        const req = getPetExpRequired(pid, lv);
+        const cur = state.petExp[pid] || 0;
+        const r = Math.max(0, Math.min(1, cur / Math.max(1, req)));
+        bar.style.transform = `scaleX(${r})`;
+        if (txtEl) txtEl.textContent = `${fmt(cur)} / ${fmt(req)} (${(r * 100).toFixed(1)}%)`;
       }
     });
   } else if (activeTab === 'relics') {
@@ -1575,125 +1595,155 @@ function renderTreasuresTab(container) {
 
 
 function renderPetsTab(container) {
+  const petLuckMult = getPetLuckMultiplier();
   const ownedCnt = SPIRIT_PETS.filter(p => (state.pets[p.id] || 0) > 0).length;
-  const tierColors = {
-    '灵兽':     'bg-slate-500/20 text-slate-300 border-slate-500/40',
-    '四象圣兽': 'bg-teal-500/20 text-teal-200 border-teal-400/50',
-    '上古瑞兽': 'bg-sky-500/20 text-sky-200 border-sky-400/50',
-    '上古凶兽': 'bg-rose-500/20 text-rose-200 border-rose-400/50',
-    '洪荒神兽': 'bg-amber-500/20 text-amber-200 border-amber-400/55',
-    '太初祖兽': 'bg-fuchsia-500/25 text-fuchsia-200 border-fuchsia-400/60'
-  };
 
-  const cards = SPIRIT_PETS.map(pet => {
-    const lv = state.pets[pet.id] || 0;
-    const owned = lv > 0;
-    const isAct = owned && state.activePet === pet.id;
-    const mult = isAct ? 2 : 1;
-
-    const statPills = [];
-    if (pet.qiPerLv > 0)    statPills.push(`<span class="px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-300">+${Math.round(pet.qiPerLv * (owned ? lv : 1) * mult * 100)}% 修为</span>`);
-    if (pet.stonePerLv > 0) statPills.push(`<span class="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">+${Math.round(pet.stonePerLv * (owned ? lv : 1) * mult * 100)}% 灵石</span>`);
-    if (pet.jadePerLv > 0)  statPills.push(`<span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300">+${Math.round(pet.jadePerLv * (owned ? lv : 1) * mult * 100)}% 仙玉</span>`);
-    if (pet.luckPerLv > 0)  statPills.push(`<span class="px-1.5 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300">+${Math.round(pet.luckPerLv * (owned ? lv : 1) * mult * 100)}% 寻宝</span>`);
-    if (pet.btAdd > 0)      statPills.push(`<span class="px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-200">+${(pet.btAdd * mult * 100).toFixed(1)}% 破境</span>`);
-    if (pet.critAdd > 0)    statPills.push(`<span class="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300">+${(pet.critAdd * mult * 100).toFixed(1)}% 暴击</span>`);
-    if (pet.cdCut > 0)      statPills.push(`<span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300">-${(pet.cdCut * mult).toFixed(2)}s 调息</span>`);
-
-    let actionHtml = '';
-    if (!owned) {
-      const cur = pet.unlockCur === 'jade' ? state.jade : state.stones;
-      const unit = pet.unlockCur === 'jade' ? '💎' : '灵石';
-      actionHtml = `
-        <button data-pet-buy="${pet.id}" ${cur < pet.unlockCost ? 'disabled' : ''} class="w-full py-2 px-3 rounded-xl font-extrabold text-xs transition active:scale-95 bg-gradient-to-r from-teal-600 to-indigo-600 hover:brightness-110 disabled:bg-xian-950 disabled:from-xian-950 disabled:to-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800 text-white">
-          契约收服 — ${fmt(pet.unlockCost)} ${unit}
-        </button>
-      `;
-    } else {
-      const cur = pet.lvCur === 'jade' ? state.jade : state.stones;
-      const unit = pet.lvCur === 'jade' ? '💎' : '灵石';
-      const calc = calcBulk(pet.baseLvCost, pet.lvScale, lv - 1, pet.maxLv - 1, cur);
-      actionHtml = `
-        <div class="grid grid-cols-12 gap-1.5">
-          <button data-pet-buy="${pet.id}" ${calc.canBuy ? '' : 'disabled'} class="col-span-8 py-2 px-2 rounded-xl font-extrabold text-[11px] transition active:scale-95 truncate ${
-            calc.maxed ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 cursor-default'
-            : 'bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800 text-white'
-          }">${fmtBulkBtn(calc, '投喂进阶', unit)}</button>
-          <button data-pet-deploy="${pet.id}" class="col-span-4 py-2 px-2 rounded-xl font-extrabold text-[11px] transition active:scale-95 ${
-            isAct ? 'bg-amber-400 text-slate-950 shadow' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-          }">${isAct ? '出战中(2x)' : '出战'}</button>
-        </div>
-      `;
-    }
-
+  // 1. 提升灵宠结缘概率升级卡片
+  const luckCards = PET_LUCK_UPGRADES.map(u => {
+    const lv = state.petLuckUpgrades[u.id] || 0;
+    const cur = u.currency === 'jade' ? state.jade : state.stones;
+    const unit = u.currency === 'jade' ? '💎' : '灵石';
+    const calc = calcBulk(u.baseCost, u.scale, lv, u.maxLv, cur);
     return `
-      <div class="p-3.5 rounded-xl border ${isAct ? 'border-amber-400 bg-amber-500/10 shadow-lg' : owned ? 'border-teal-400/45 bg-xian-850' : 'border-slate-800 bg-xian-950/75'} flex flex-col justify-between gap-2.5">
+      <div class="p-3 rounded-xl bg-xian-850 border ${u.currency === 'jade' ? 'border-emerald-500/35' : 'border-slate-800'} flex flex-col justify-between gap-2">
         <div>
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-black text-sm text-white">${pet.icon} ${pet.name}</span>
-            <div class="flex items-center gap-1.5">
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold border ${tierColors[pet.tier] || ''}">${pet.tier}</span>
-              ${owned ? `<span class="px-1.5 py-0.5 rounded bg-black/40 text-[10px] font-mono font-bold text-amber-300">Lv.${lv}/${pet.maxLv}</span>` : ''}
+          <div class="flex items-center justify-between gap-1">
+            <span class="font-extrabold text-xs sm:text-sm text-white">🪈 ${u.name}</span>
+            <span class="px-1.5 py-0.5 rounded bg-xian-950 text-[10px] font-mono text-teal-300">Lv.${lv}/${u.maxLv}</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">${u.desc}</p>
+        </div>
+        <button data-pet-luck-buy="${u.id}" ${calc.canBuy ? '' : 'disabled'} class="w-full py-1.5 px-2 rounded-lg font-extrabold text-[11px] transition active:scale-95 ${
+          calc.maxed ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-default'
+          : 'bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800 text-white'
+        }">${fmtBulkBtn(calc, '提升结缘率', unit)}</button>
+      </div>
+    `;
+  }).join('');
+
+  // 实时结缘概率一览条
+  const rateChips = PET_TIERS.map(t => {
+    const r = getPetTierLiveRate(t.id) * 100;
+    const txt = r >= 0.1 ? `${r.toFixed(2)}%` : `${r.toFixed(4)}%`;
+    return `<span class="px-2 py-0.5 rounded-md text-[10px] font-mono border ${t.badgeCls}">${t.name}: ${txt}</span>`;
+  }).join('');
+
+  // 2. 四大品阶上古灵宠图鉴（从洪荒神兽到灵兽）
+  const tierOrder = ['honghuang', 'ruishou', 'sixiang', 'lingshou'];
+  const tierSections = tierOrder.map(tid => {
+    const tObj = PET_TIERS.find(t => t.id === tid);
+    const items = SPIRIT_PETS.filter(p => p.tierId === tid);
+    const cards = items.map(pet => {
+      const lv = state.pets[pet.id] || 0;
+      const owned = lv > 0;
+      const isAct = owned && state.activePet === pet.id;
+      const mult = isAct ? 2 : 1;
+
+      const statPills = [];
+      if (owned) {
+        if (pet.qiPerLv > 0)    statPills.push(`<span class="px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-300">+${Math.round(pet.qiPerLv * lv * mult * 100)}% 修为</span>`);
+        if (pet.stonePerLv > 0) statPills.push(`<span class="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">+${Math.round(pet.stonePerLv * lv * mult * 100)}% 灵石</span>`);
+        if (pet.jadePerLv > 0)  statPills.push(`<span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300">+${Math.round(pet.jadePerLv * lv * mult * 100)}% 仙玉</span>`);
+        if (pet.luckPerLv > 0)  statPills.push(`<span class="px-1.5 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300">+${Math.round(pet.luckPerLv * lv * mult * 100)}% 寻宝</span>`);
+        if (pet.btAdd > 0)      statPills.push(`<span class="px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-200">+${(pet.btAdd * mult * 100).toFixed(1)}% 破境</span>`);
+        if (pet.critAdd > 0)    statPills.push(`<span class="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300">+${(pet.critAdd * mult * 100).toFixed(1)}% 暴击</span>`);
+        if (pet.cdCut > 0)      statPills.push(`<span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300">-${(pet.cdCut * mult).toFixed(2)}s 调息</span>`);
+      }
+
+      let expBarHtml = '';
+      if (owned) {
+        const isMax = lv >= PET_MAX_LEVEL;
+        const req = isMax ? 1 : getPetExpRequired(pet.id, lv);
+        const curExp = isMax ? 1 : (state.petExp[pet.id] || 0);
+        const ratio = isMax ? 1 : Math.max(0, Math.min(1, curExp / Math.max(1, req)));
+        const expLabel = isMax ? 'Lv.100 满级大圆满' : `${fmt(curExp)} / ${fmt(req)} (${(ratio * 100).toFixed(1)}%)`;
+        expBarHtml = `
+          <div class="mt-2.5 space-y-1">
+            <div class="flex items-center justify-between text-[10px] font-mono">
+              <span class="${isAct ? 'text-amber-300 font-bold' : 'text-slate-400'}">${isMax ? '✨ 修为圆满' : isAct ? '🔥 出战修炼中' : '休养中（出战可获经验）'}</span>
+              <span data-pet-exp-text="${pet.id}" class="text-teal-300">${expLabel}</span>
+            </div>
+            <div class="w-full h-1.5 bg-xian-950 rounded-full overflow-hidden border border-slate-800">
+              <div data-pet-exp-bar="${pet.id}" class="cd-gpu-bar h-full w-full ${isMax ? 'bg-gradient-to-r from-amber-300 to-fuchsia-400' : 'bg-gradient-to-r from-emerald-400 to-amber-300'}" style="transform: scaleX(${ratio});"></div>
             </div>
           </div>
-          <p class="text-xs text-slate-400 mt-1 leading-relaxed">${pet.desc}</p>
-          <div class="flex flex-wrap gap-1 mt-2 text-[10px] font-mono">
-            ${statPills.join('')}
+        `;
+      }
+
+      return `
+        <div class="p-3.5 rounded-xl border ${isAct ? 'border-amber-400 bg-amber-500/10 shadow-lg' : owned ? tObj.cardCls : 'border-dashed border-slate-800 bg-xian-950/75 opacity-65'} flex flex-col justify-between gap-2.5">
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-black text-sm ${owned ? 'text-white' : 'text-slate-400'}">${pet.icon} ${owned ? pet.name : '？？？'}</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${owned ? 'bg-black/45 text-amber-300' : 'bg-slate-900 text-slate-500'}">${owned ? `Lv.${lv}/${PET_MAX_LEVEL}` : '未结缘'}</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">${owned ? pet.desc : '打坐吐纳或开启机缘秘宝有几率结缘认主（不可购买，出战后随吐纳获取经验升级）。'}</p>
+            ${owned ? `<div class="flex flex-wrap gap-1 mt-2 text-[10px] font-mono">${statPills.join('')}</div>` : ''}
+            ${expBarHtml}
           </div>
+          ${owned ? `
+            <button data-pet-deploy="${pet.id}" class="w-full py-2 px-3 rounded-xl font-extrabold text-xs transition active:scale-95 ${
+              isAct ? 'bg-amber-400 text-slate-950 shadow' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+            }">${isAct ? '⭐ 出战中（2x 加成 + 获取经验）' : '派遣出战（2x 加成 + 获取经验）'}</button>
+          ` : ''}
         </div>
-        ${actionHtml}
+      `;
+    }).join('');
+
+    return `
+      <div class="space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="px-2 py-0.5 rounded-md text-xs font-black border ${tObj.badgeCls}">${tObj.name}</span>
+          <span class="text-[11px] text-slate-400">${tObj.desc}</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">${cards}</div>
       </div>
     `;
   }).join('');
 
   container.innerHTML = `
-    <div class="space-y-4">
-      <div class="p-3.5 rounded-2xl bg-gradient-to-r from-teal-500/15 via-emerald-500/15 to-amber-500/15 border border-teal-400/40 space-y-1">
+    <div class="space-y-5">
+      <div class="p-3.5 rounded-2xl bg-gradient-to-r from-teal-500/15 via-emerald-500/15 to-amber-500/15 border border-teal-400/40 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <span class="font-black text-sm text-teal-200">🐉 上古灵宠园（轮回永久保留）</span>
-          <span class="px-2.5 py-0.5 rounded-full bg-black/40 text-xs font-mono font-bold text-amber-300">已契约 ${ownedCnt} / ${SPIRIT_PETS.length}</span>
+          <div>
+            <div class="font-black text-sm text-teal-200">🐉 上古灵宠园（随机结缘 · 仅出战灵宠随吐纳升级 · 最高 100 级）</div>
+            <div class="text-xs text-slate-300 mt-0.5">当前灵宠结缘倍率：<strong class="text-emerald-300 font-mono">${petLuckMult.toFixed(2)}x</strong> • 已结缘 <strong class="text-amber-300 font-mono">${ownedCnt}/${SPIRIT_PETS.length}</strong> • 出战灵宠享 <strong>2x 翻倍效果</strong></div>
+          </div>
+          <span class="text-[11px] font-mono text-slate-300">累计结缘: ${fmt(state.totalPetsFound || 0)} 次</span>
         </div>
-        <p class="text-xs text-slate-300 leading-relaxed">
-          所有已契约的上古神兽均提供<strong>永久被动加成</strong>；选择一只灵宠<strong>出战</strong>，其全部加成将直接<strong>翻倍（2x）</strong>！
-        </p>
+        <div class="flex flex-wrap gap-1.5">${rateChips}</div>
       </div>
-      ${renderBuyModeBar('<span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">灵宠投喂批量设置</span>')}
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${cards}</div>
+
+      <div class="space-y-2.5">
+        ${renderBuyModeBar('<span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">🪈 提升灵宠结缘概率（开启机缘秘宝更享 3x 结缘率！）</span>')}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">${luckCards}</div>
+      </div>
+
+      <div class="space-y-4 pt-2 border-t border-slate-800">
+        ${tierSections}
+      </div>
     </div>
   `;
 
   container.querySelectorAll('[data-buy-mode]').forEach(btn => {
     btn.onclick = () => { buyMode = btn.dataset.buyMode; renderActiveTab(); };
   });
-  container.querySelectorAll('[data-pet-buy]').forEach(btn => {
+  container.querySelectorAll('[data-pet-luck-buy]').forEach(btn => {
     btn.onclick = () => {
-      const pet = SPIRIT_PETS.find(x => x.id === btn.dataset.petBuy);
-      if (!pet) return;
-      const lv = state.pets[pet.id] || 0;
-      if (lv === 0) {
-        if (pet.unlockCur === 'jade') {
-          if (state.jade < pet.unlockCost) return;
-          state.jade -= pet.unlockCost;
-        } else {
-          if (state.stones < pet.unlockCost) return;
-          state.stones -= pet.unlockCost;
-        }
-        state.pets[pet.id] = 1;
-        if (!state.activePet) state.activePet = pet.id;
-        addLog(`🐉 灵兽认主！成功契约上古神兽 <span class="feed-strong">${pet.icon} ${pet.name}</span>（${pet.tier}）！`, 'major');
-        showToast(`🐉 成功契约「${pet.name}」！`, 'emerald');
-      } else {
-        const cur = pet.lvCur === 'jade' ? state.jade : state.stones;
-        const calc = calcBulk(pet.baseLvCost, pet.lvScale, lv - 1, pet.maxLv - 1, cur);
-        if (!calc.canBuy || calc.count <= 0) return;
-        if (pet.lvCur === 'jade') state.jade -= calc.cost;
+      const u = PET_LUCK_UPGRADES.find(x => x.id === btn.dataset.petLuckBuy);
+      if (!u) return;
+      const lv = state.petLuckUpgrades[u.id] || 0;
+      const cur = u.currency === 'jade' ? state.jade : state.stones;
+      const calc = calcBulk(u.baseCost, u.scale, lv, u.maxLv, cur);
+      if (calc.canBuy && calc.count > 0) {
+        if (u.currency === 'jade') state.jade -= calc.cost;
         else state.stones -= calc.cost;
-        state.pets[pet.id] = lv + calc.count;
+        state.petLuckUpgrades[u.id] = lv + calc.count;
+        saveGame(false);
+        hudDirty = true;
+        flushHUD();
+        renderActiveTab();
       }
-      saveGame(false);
-      hudDirty = true;
-      flushHUD();
-      renderActiveTab();
     };
   });
   container.querySelectorAll('[data-pet-deploy]').forEach(btn => {

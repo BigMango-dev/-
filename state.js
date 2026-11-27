@@ -7,7 +7,8 @@ function defaultState() {
   const pArts = {};
   PHYSIQUES.forEach(p => { pArts[p.art.id] = 0; });
   const pets = {};
-  SPIRIT_PETS.forEach(p => { pets[p.id] = 0; });
+  const petExp = {};
+  SPIRIT_PETS.forEach(p => { pets[p.id] = 0; petExp[p.id] = 0; });
   const relics = {};
   RELICS.forEach(r => { relics[r.id] = 0; });
   return {
@@ -31,11 +32,14 @@ function defaultState() {
     arts,
     physiques: [],      // 已觉醒逆天体质 ID 列表
     physiqueArts: pArts,
-    pets,               // 上古灵宠等级 (0 = 未契约)
+    pets,               // 上古灵宠等级 (0 = 未结缘, 最高 100 级)
+    petExp,             // 上古灵宠当前等级经验
     activePet: null,    // 当前出战灵宠 ID (效果翻倍)
     relics,             // 宝物等级 (重复获得自动升级；先天至宝最高1级)
     luckUpgrades: { lu_compass: 0, lu_eye: 0, lu_array: 0 },
+    petLuckUpgrades: { plu_incense: 0, plu_bell: 0, plu_altar: 0 },
     totalRelicsFound: 0,
+    totalPetsFound: 0,
     karmaPerks: { k_qi: 0, k_stone: 0, k_speed: 0, k_jade: 0, k_luck: 0 },
     btPity: 0,          // 当前瓶颈破境感悟保底（失败累积，成功后清零）
     useJadeGuard: false,// 是否启用仙玉护道
@@ -91,10 +95,13 @@ function mergeState(parsed) {
     arts: sanitizeMap(p.arts, def.arts),
     physiqueArts: sanitizeMap(p.physiqueArts, def.physiqueArts),
     pets: sanitizeMap(p.pets, def.pets),
+    petExp: sanitizeMap(p.petExp, def.petExp),
     activePet: (p.activePet && SPIRIT_PETS.some(x => x.id === p.activePet)) ? p.activePet : null,
     relics: sanitizeMap(p.relics, def.relics),
     luckUpgrades: sanitizeMap(p.luckUpgrades, def.luckUpgrades),
+    petLuckUpgrades: sanitizeMap(p.petLuckUpgrades, def.petLuckUpgrades),
     totalRelicsFound: Math.floor(safeNum(p.totalRelicsFound, 0, 0)),
+    totalPetsFound: Math.floor(safeNum(p.totalPetsFound, 0, 0)),
     karmaPerks: sanitizeMap(p.karmaPerks, def.karmaPerks),
     btPity: safeNum(p.btPity, 0, 0),
     useJadeGuard: Boolean(p.useJadeGuard),
@@ -102,6 +109,10 @@ function mergeState(parsed) {
     lastActiveAt: safeNum(p.lastActiveAt, Date.now(), 0)
   };
   if (state.realmIdx > state.maxRealmEver) state.maxRealmEver = state.realmIdx;
+  SPIRIT_PETS.forEach(pet => {
+    state.pets[pet.id] = Math.min(PET_MAX_LEVEL, Math.floor(safeNum(state.pets[pet.id], 0, 0)));
+    if (state.pets[pet.id] >= PET_MAX_LEVEL) state.petExp[pet.id] = 0;
+  });
 }
 
 function saveGame(notify = false) {
@@ -329,6 +340,17 @@ function getArtsFlatGains() {
 
 
 // 汇总所有上古灵宠加成（出战灵宠效果翻倍！）
+
+// 灵宠升级所需经验（最高 100 级，后期极难升级；越稀有的神兽所需经验越多）
+function getPetExpRequired(petId, lv) {
+  const curLv = Math.max(1, Math.floor(lv || 1));
+  if (curLv >= PET_MAX_LEVEL) return 0;
+  const pet = SPIRIT_PETS.find(x => x.id === petId);
+  const tier = pet ? PET_TIERS.find(t => t.id === pet.tierId) : null;
+  const tierMult = tier ? (tier.expMult || 1.0) : 1.0;
+  return Math.max(100, Math.floor(180 * tierMult * Math.pow(1.072, curLv - 1) * (1 + (curLv - 1) * 0.10)));
+}
+
 function getPetBonuses() {
   let qi = 0, stone = 0, jade = 0, luck = 0, crit = 0, bt = 0, cdCut = 0;
   for (const pet of SPIRIT_PETS) {
@@ -400,6 +422,27 @@ function getRelicTierLiveRate(tierId) {
   const caps = { faqi: 0.35, lingqi: 0.15, fabao: 0.05, lingbao: 0.015, xianqi: 0.003 };
   return Math.min(caps[tierId] || 0.25, tier.baseRate * luck);
 }
+
+// 综合灵宠结缘概率倍率
+function getPetLuckMultiplier() {
+  let upgLuck = 0;
+  for (const u of PET_LUCK_UPGRADES) {
+    upgLuck += (state.petLuckUpgrades[u.id] || 0) * u.luckPerLv;
+  }
+  const pb = getPetBonuses();
+  const karmaLuck = (state.karmaPerks.k_luck || 0) * 0.20;
+  return 1 + upgLuck + pb.luck * 0.5 + karmaLuck;
+}
+
+// 获取某个灵宠品阶的实时结缘概率
+function getPetTierLiveRate(tierId) {
+  const tier = PET_TIERS.find(t => t.id === tierId);
+  if (!tier) return 0;
+  const luck = getPetLuckMultiplier();
+  const caps = { lingshou: 0.30, sixiang: 0.10, ruishou: 0.025, honghuang: 0.004 };
+  return Math.min(caps[tierId] || 0.25, tier.baseRate * luck);
+}
+
 
 function getQiMultiplier() {
   const art = getArtifact();

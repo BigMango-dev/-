@@ -154,6 +154,118 @@ function rollRelicDrops(trials = 1, silent = false, rateBoost = 1) {
   }
 }
 
+
+// 上古灵宠随机结缘判定（与至宝相同：吐纳与开秘宝触发，重复结缘自动升级！）
+
+// 仅出战灵宠随吐纳获得经验并自动升级（最高 100 级）
+function grantPetExp(petId, amount, silent = false) {
+  if (!petId || amount <= 0) return;
+  const lv = state.pets[petId] || 0;
+  if (lv <= 0 || lv >= PET_MAX_LEVEL) return;
+
+  const pet = SPIRIT_PETS.find(x => x.id === petId);
+  if (!pet) return;
+
+  state.petExp[petId] = (state.petExp[petId] || 0) + amount;
+  let leveledUp = 0;
+  while (state.pets[petId] < PET_MAX_LEVEL) {
+    const req = getPetExpRequired(petId, state.pets[petId]);
+    if (req <= 0 || state.petExp[petId] < req) break;
+    state.petExp[petId] -= req;
+    state.pets[petId]++;
+    leveledUp++;
+  }
+  if (state.pets[petId] >= PET_MAX_LEVEL) {
+    state.pets[petId] = PET_MAX_LEVEL;
+    state.petExp[petId] = 0;
+  }
+
+  if (leveledUp > 0 && !silent) {
+    const newLv = state.pets[petId];
+    const isMax = newLv >= PET_MAX_LEVEL;
+    addLog(
+      `🐉 <span class="${isMax ? 'feed-fuchsia' : 'feed-emerald'}">灵宠进阶！</span>出战神兽 <span class="feed-strong">${pet.icon} ${pet.name}</span> 升至 <span class="feed-amber">Lv.${newLv}${isMax ? '（满级大圆满！）' : ''}</span>！`,
+      isMax ? 'major' : 'treasure'
+    );
+    if (isMax) {
+      showToast(`🐉「${pet.name}」已臻至 Lv.100 满级大圆满！`, 'fuchsia');
+    } else {
+      showToast(`🐉「${pet.name}」升级至 Lv.${newLv}！`, 'emerald');
+    }
+    if (activeTab === 'pets') renderActiveTab();
+  }
+}
+
+function rollPetDrops(trials = 1, silent = false, rateBoost = 1) {
+  const n = Math.max(1, trials);
+  const tierOrder = ['honghuang', 'ruishou', 'sixiang', 'lingshou'];
+  let foundAny = false;
+
+  for (const tid of tierOrder) {
+    const p = Math.min(0.45, getPetTierLiveRate(tid) * rateBoost);
+    if (p <= 0) continue;
+    let hits = 0;
+    if (n === 1) {
+      if (Math.random() < p) hits = 1;
+    } else {
+      const expected = n * p;
+      hits = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+    }
+    if (hits <= 0) continue;
+
+    const pool = SPIRIT_PETS.filter(pet => pet.tierId === tid);
+    const tierObj = PET_TIERS.find(t => t.id === tid);
+    for (let i = 0; i < hits; i++) {
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      const prevLv = state.pets[pick.id] || 0;
+      state.totalPetsFound = (state.totalPetsFound || 0) + 1;
+      foundAny = true;
+
+      if (prevLv === 0) {
+        state.pets[pick.id] = 1;
+        state.petExp[pick.id] = 0;
+        if (!state.activePet) state.activePet = pick.id;
+        if (!silent) {
+          const isRare = tid === 'honghuang' || tid === 'ruishou';
+          addLog(`🐉 灵兽奇遇！初次结缘【<span class="${isRare ? 'feed-fuchsia' : 'feed-emerald'}">${tierObj.name}</span>】<span class="feed-strong">${pick.icon} ${pick.name}</span>（Lv.1 认主，派遣出战即可随吐纳升级）！`, isRare ? 'major' : 'treasure');
+          if (tid === 'honghuang') {
+            playPhysiqueSound('ph_chaos');
+            showBreakthroughAnimation({
+              type: 'ascend',
+              kicker: '太古异象 · 万兽朝拜 · 神兽认主',
+              icon: pick.icon,
+              title: `结缘「${pick.name}」`,
+              subtitle: pick.desc,
+              rewards: [tierObj.name, '出战随吐纳升级(上限100级)', '出战享双倍(2x)加持']
+            });
+          } else {
+            showToast(`🐉 初次结缘${tierObj.name}「${pick.name}」！`, isRare ? 'fuchsia' : 'emerald');
+          }
+        }
+      } else if (prevLv < PET_MAX_LEVEL) {
+        // 重复结缘：转化为该灵宠当前等级 15% 经验（需出战吐纳为主力升级方式）
+        const bonusExp = Math.max(25, Math.floor(getPetExpRequired(pick.id, prevLv) * 0.15));
+        grantPetExp(pick.id, bonusExp, silent);
+        if (!silent) {
+          addLog(`🐉 灵兽重逢！再次遇见 <span class="feed-strong">${pick.icon} ${pick.name}</span>，转化为 <span class="feed-emerald">+${fmt(bonusExp)} 灵宠经验</span>！`, 'treasure');
+        }
+      } else {
+        // 已满级 100 级：重复结缘化为仙玉馈赠
+        const jadeGift = Math.max(1, Math.round((tierObj.maxJadeReward || 10) * getJadeMultiplier()));
+        state.jade += jadeGift;
+        if (!silent) {
+          addLog(`🐉 满级灵兽馈赠！<span class="feed-strong">${pick.icon} ${pick.name}</span> 献上 <span class="feed-emerald">+${fmt(jadeGift)} 仙玉</span>！`, 'treasure');
+        }
+      }
+    }
+    if (n === 1 && hits > 0) break;
+  }
+
+  if (foundAny && activeTab === 'pets' && !silent) {
+    renderActiveTab();
+  }
+}
+
 function performMeditate(silent = false, batchScale = 1) {
   const scale = Math.max(1, batchScale);
   const world = getWorld();
@@ -217,8 +329,17 @@ function performMeditate(silent = false, batchScale = 1) {
     }
   }
 
-  // 宝物与三大先天至宝寻宝判定
+  // 出战灵宠随吐纳获取经验（仅当前出战灵宠可获得经验，最高 100 级）
+  if (state.activePet && (state.pets[state.activePet] || 0) > 0 && state.pets[state.activePet] < PET_MAX_LEVEL) {
+    const petExpGain = Math.max(1, Math.round(
+      (10 + state.realmIdx * 4) * critMult * (pill ? 1.25 : 1.0) * (state.ascended ? 1.3 : 1.0) * scale
+    ));
+    grantPetExp(state.activePet, petExpGain, silent);
+  }
+
+  // 宝物与三大先天至宝寻宝判定 + 上古灵宠结缘判定
   rollRelicDrops(scale, silent, 1);
+  rollPetDrops(scale, silent, 1);
 
   hudDirty = true;
 }
@@ -417,6 +538,7 @@ function doReincarnate() {
   state.chests = 0;
   REALMS.forEach(r => { state.arts[r.art.id] = 0; });
   LUCK_UPGRADES.forEach(u => { if (u.resetOnPrestige) state.luckUpgrades[u.id] = 0; });
+  PET_LUCK_UPGRADES.forEach(u => { if (u.resetOnPrestige) state.petLuckUpgrades[u.id] = 0; });
 
   playBreakthroughSound('ascend');
   showBreakthroughAnimation({
@@ -456,6 +578,7 @@ function openChests(count = 1) {
   addLog(`🎁 开启 <span class="feed-strong">${toOpen} 个机缘秘宝</span> → <span class="feed-amber">+${fmt(totalStones)} 灵石</span>，<span class="feed-emerald">+${fmt(totalJade)} 仙玉</span>！`, 'treasure');
   showToast(`🎁 +${fmt(totalStones)} 灵石，+${fmt(totalJade)} 仙玉`, 'emerald');
   rollRelicDrops(toOpen, false, 3);
+  rollPetDrops(toOpen, false, 3);
   hudDirty = true;
   flushHUD();
   renderActiveTab();
