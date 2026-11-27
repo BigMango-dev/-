@@ -138,7 +138,7 @@ function getQiRequired() {
   }
   const subScale = subScales[state.subIdx] || subScales[3];
   const prestigeTax = 1 + state.prestige * 0.12;
-  return Math.floor(r.baseQi * subScale * prestigeTax);
+  return Math.max(1, Math.floor(r.baseQi * subScale * prestigeTax * 0.5));
 }
 
 // 仙玉护道消耗（每次尝试破境时扣除）
