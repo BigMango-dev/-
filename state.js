@@ -130,11 +130,11 @@ function getActivePill() {
 // 当前小境界所需修为：人界陡峭，仙界与至高呈断崖式跃升
 function getQiRequired() {
   const r = getRealm();
-  let subScales = [1.0, 2.0, 3.8, 7.0]; // 人界
+  let subScales = [1.0, 2.5, 5.5, 12.0]; // 人界：小境逐步拉长
   if (state.realmIdx >= 17) {
-    subScales = [1.0, 3.5, 9.0, 22.0];  // 至高天堑
+    subScales = [1.0, 4.0, 12.0, 30.0];  // 至高天堑
   } else if (state.realmIdx >= 9) {
-    subScales = [1.0, 2.8, 6.5, 14.0];  // 仙界断崖
+    subScales = [1.0, 3.2, 8.5, 20.0];   // 仙界断崖
   }
   const subScale = subScales[state.subIdx] || subScales[3];
   const prestigeTax = 1 + state.prestige * 0.12;
@@ -178,11 +178,12 @@ function getBreakthroughChance() {
     }
   }
 
-  // 逆天体质护道加成：每种体质 +3%，顶级道胎/混沌/鸿蒙额外 +4%
-  chance += state.physiques.length * 0.03;
+  // 逆天体质护道加成：每种体质 +4%，顶级圣体额外大幅加持
+  chance += state.physiques.length * 0.04;
   if (state.physiques.includes('ph_dao')) chance += 0.04;
-  if (state.physiques.includes('ph_chaos')) chance += 0.04;
-  if (state.physiques.includes('ph_hongmeng')) chance += 0.05;
+  if (state.physiques.includes('ph_eternal')) chance += 0.08;
+  if (state.physiques.includes('ph_chaos')) chance += 0.12;
+  if (state.physiques.includes('ph_hongmeng')) chance += 0.18;
 
   // 仙玉护道加成
   const guardCost = getJadeGuardCost();
@@ -217,7 +218,7 @@ function canAscendNow() {
 function getCooldownSeconds() {
   const base = 1.80;
   const artCut = getArtifact().cdCut;
-  const daoCut = state.physiques.includes('ph_dao') ? 0.15 : 0;
+  const daoCut = state.physiques.includes('ph_dao') ? 0.20 : 0;
   const hardFloor = Math.max(0.24, 0.60 - state.karmaPerks.k_speed * 0.06);
   return Math.max(hardFloor, base - artCut - daoCut);
 }
@@ -233,6 +234,48 @@ function getPhysiqueActualCost(ph) {
     karma: Math.floor(ph.baseKarma * mult),
     jade: Math.floor(ph.baseJade * mult)
   };
+}
+
+// 前六大基础逆天体质 ID
+const BASE_PHYSIQUE_IDS = ['ph_heart', 'ph_blood', 'ph_bone', 'ph_eye', 'ph_dao', 'ph_ancient'];
+
+function getUnlockedBasePhysiqueCount() {
+  return BASE_PHYSIQUE_IDS.filter(id => state.physiques.includes(id)).length;
+}
+
+// 检查最后三大至高体质的严格前置顺序：前6体全解锁 -> 永恒仙体 -> 混沌神体 -> 鸿蒙至尊体
+function getPhysiqueLockReason(ph) {
+  if (!ph) return '未知体质';
+  if (state.physiques.includes(ph.id)) return null;
+  const baseCnt = getUnlockedBasePhysiqueCount();
+  if (ph.id === 'ph_eternal') {
+    if (baseCnt < BASE_PHYSIQUE_IDS.length) {
+      return `需先解锁全部前六大逆天体质 (${baseCnt}/6)`;
+    }
+    return null;
+  }
+  if (ph.id === 'ph_chaos') {
+    if (baseCnt < BASE_PHYSIQUE_IDS.length) {
+      return `需先集齐前六大体质并觉醒永恒仙体 (${baseCnt}/6)`;
+    }
+    if (!state.physiques.includes('ph_eternal')) {
+      return '需先觉醒「🌟 永恒仙体」方可解锁';
+    }
+    return null;
+  }
+  if (ph.id === 'ph_hongmeng') {
+    if (baseCnt < BASE_PHYSIQUE_IDS.length) {
+      return `需先集齐前六大体质，按序觉醒永恒→混沌 (${baseCnt}/6)`;
+    }
+    if (!state.physiques.includes('ph_eternal')) {
+      return '需按序先觉醒「🌟 永恒仙体」→「🌌 混沌神体」';
+    }
+    if (!state.physiques.includes('ph_chaos')) {
+      return '需先觉醒「🌌 混沌神体」方可解锁';
+    }
+    return null;
+  }
+  return null;
 }
 
 // 汇总所有已觉醒体质与专属功法的加成（加法池，避免指数爆炸）

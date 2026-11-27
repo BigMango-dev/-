@@ -36,6 +36,47 @@ function playBreakthroughSound(type = 'minor') {
   } catch (_) {}
 }
 
+
+// 9 大逆天体质专属觉醒音效（最后三大圣体自带史诗级交响和弦）
+function playPhysiqueSound(phId) {
+  if (!state.sfxEnabled) return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+
+    const presets = {
+      ph_heart:    { wave: 'sine',     step: 0.07, dur: 0.8,  notes: [523.25, 659.25, 783.99, 1046.5, 1318.5] },
+      ph_blood:    { wave: 'sawtooth', step: 0.08, dur: 0.9,  notes: [146.83, 174.61, 220.0, 293.66, 220.0, 349.23] },
+      ph_bone:     { wave: 'triangle', step: 0.08, dur: 1.0,  notes: [261.63, 392.0, 523.25, 659.25, 783.99] },
+      ph_eye:      { wave: 'sine',     step: 0.07, dur: 1.0,  notes: [329.63, 493.88, 659.25, 987.77, 1318.5] },
+      ph_dao:      { wave: 'triangle', step: 0.09, dur: 1.1,  notes: [220.0, 329.63, 440.0, 554.37, 659.25, 880.0] },
+      ph_ancient:  { wave: 'sawtooth', step: 0.08, dur: 1.1,  notes: [130.81, 196.0, 261.63, 329.63, 392.0, 523.25] },
+      ph_eternal:  { wave: 'triangle', step: 0.07, dur: 1.5,  notes: [261.63, 329.63, 392.0, 523.25, 659.25, 783.99, 1046.5, 1318.5] },
+      ph_chaos:    { wave: 'sawtooth', step: 0.08, dur: 1.6,  notes: [110.0, 164.81, 220.0, 261.63, 329.63, 440.0, 659.25, 880.0] },
+      ph_hongmeng: { wave: 'triangle', step: 0.07, dur: 1.9,  notes: [130.81, 196.0, 261.63, 329.63, 392.0, 523.25, 659.25, 783.99, 1046.5, 1567.98] }
+    };
+    const cfg = presets[phId] || presets.ph_eternal;
+
+    cfg.notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = cfg.wave;
+      osc.frequency.setValueAtTime(freq, now + i * cfg.step);
+      gain.gain.setValueAtTime(0.001, now + i * cfg.step);
+      const peak = cfg.wave === 'sawtooth' ? 0.065 : 0.11;
+      gain.gain.exponentialRampToValueAtTime(peak, now + i * cfg.step + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * cfg.step + cfg.dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now + i * cfg.step);
+      osc.stop(now + i * cfg.step + cfg.dur + 0.05);
+    });
+  } catch (_) {}
+}
+
 function performMeditate(silent = false, batchScale = 1) {
   const scale = Math.max(1, batchScale);
   const world = getWorld();
@@ -54,9 +95,10 @@ function performMeditate(silent = false, batchScale = 1) {
   }
 
   // 血域魔体暴击加成
-  const critChance = state.physiques.includes('ph_blood') ? 0.18 : 0.05;
+  const hasBlood = state.physiques.includes('ph_blood');
+  const critChance = hasBlood ? 0.22 : 0.05;
   const isCrit = Math.random() < critChance;
-  const critMult = isCrit ? 1.8 : 1.0;
+  const critMult = isCrit ? (hasBlood ? 2.1 : 1.8) : 1.0;
 
   const qiGain = Math.max(1, Math.round(
     (world.qiBase + flat.qiAdd) * getQiMultiplier() * critMult * (0.92 + Math.random() * 0.16) * scale
@@ -74,6 +116,7 @@ function performMeditate(silent = false, batchScale = 1) {
 
   if (!silent) {
     triggerMeditateAnim();
+    if (typeof spawnCultivatePopup === 'function') spawnCultivatePopup(qiGain, stoneGain, isCrit);
     cooldownRemaining = getCooldownSeconds();
     const critTag = isCrit ? ' <span class="feed-amber">[顿悟暴击!]</span>' : '';
     addLog(`${world.icon} 在<span class="feed-strong">${world.name}</span>吐纳周天${critTag}：<span class="feed-strong">+${fmt(qiGain)} 修为</span>，<span class="feed-amber">+${fmt(stoneGain)} 灵石</span>。`);
@@ -127,10 +170,11 @@ function attemptBreakthrough() {
   if (state.subIdx === 3 && !isAtMortalPeak()) {
     chance = state.realmIdx >= 9 ? chance * 0.65 : (state.realmIdx >= 1 ? Math.max(0.05, chance - 0.10) : chance);
   }
-  chance += state.physiques.length * 0.03;
+  chance += state.physiques.length * 0.04;
   if (state.physiques.includes('ph_dao')) chance += 0.04;
-  if (state.physiques.includes('ph_chaos')) chance += 0.04;
-  if (state.physiques.includes('ph_hongmeng')) chance += 0.05;
+  if (state.physiques.includes('ph_eternal')) chance += 0.08;
+  if (state.physiques.includes('ph_chaos')) chance += 0.12;
+  if (state.physiques.includes('ph_hongmeng')) chance += 0.18;
   if (usedGuard) chance += (state.realmIdx >= 9 ? 0.18 : 0.25);
   chance += (state.btPity || 0);
   chance = Math.max(0.01, Math.min(1.0, chance));
@@ -193,7 +237,7 @@ function attemptBreakthrough() {
   const r = getRealm();
   const fullRealmName = `${r.name} · ${SUB_REALMS[state.subIdx]}`;
   const jadeReward = Math.max(1, Math.round((isMajor ? (4 + state.realmIdx * 2) : (1 + Math.floor(state.realmIdx * 0.6))) * getJadeMultiplier()));
-  const stoneBonus = Math.round(req * 0.45 * getStoneMultiplier());
+  const stoneBonus = Math.round(req * 0.12 * Math.sqrt(getStoneMultiplier()));
 
   state.jade += jadeReward;
   state.stones += stoneBonus;
@@ -208,8 +252,9 @@ function attemptBreakthrough() {
   playBreakthroughSound(isMajor ? 'major' : 'minor');
   showBreakthroughAnimation({
     type: isMajor ? 'major' : 'minor',
-    kicker: isMajor ? '紫气东来 · 大道破境' : '气海圆满 · 境界精进',
+    kicker: isMajor ? '紫气东来 · 法相蜕变 · 大道破境' : '气海圆满 · 境界精进',
     icon: isMajor ? '🌟' : '⚡',
+    customSvg: typeof getCultivatorAvatarSVG === 'function' ? getCultivatorAvatarSVG(state.realmIdx, 102, state.subIdx) : null,
     title: fullRealmName,
     subtitle: r.desc,
     rewards
@@ -247,8 +292,9 @@ function attemptAscension() {
   playBreakthroughSound('ascend');
   showBreakthroughAnimation({
     type: 'ascend',
-    kicker: '九重天劫已过 · 天门大开',
+    kicker: '九重天劫已过 · 褪凡成仙',
     icon: '⛩️',
+    customSvg: typeof getCultivatorAvatarSVG === 'function' ? getCultivatorAvatarSVG(9, 108, 0) : null,
     title: '白日飞升 · 步入人仙',
     subtitle: '褪去凡胎，初凝仙元！解锁仙界六大圣域，永久获得 +50% 仙灵修为与 +60% 灵石转化！',
     rewards: [`+${fmt(jadeReward)} 💎 仙玉`, '解锁仙界十二重天', '解锁蓬莱仙域', '领悟《长生人仙诀》']

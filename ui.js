@@ -18,6 +18,9 @@ const DOM = {
   btCardBtn: document.getElementById('btn-breakthrough-card'),
   btCardText: document.getElementById('btn-breakthrough-card-text'),
   worldStage: document.getElementById('world-stage'),
+  sceneryLayer: document.getElementById('stage-scenery-layer'),
+  fxLayer: document.getElementById('stage-fx-layer'),
+  ambientSky: document.getElementById('ambient-sky-layer'),
   worldIcon: document.getElementById('ui-world-icon'),
   worldName: document.getElementById('ui-world-name'),
   worldDesc: document.getElementById('ui-world-desc'),
@@ -78,21 +81,521 @@ function addLog(html, tone = 'default') {
 }
 
 function triggerMeditateAnim() {
-  DOM.sprite.classList.add('sprite-pulse');
+  DOM.sprite.classList.remove('sprite-pulse', 'sprite-slash');
+  void DOM.sprite.offsetWidth;
+  DOM.sprite.classList.add('sprite-pulse', 'sprite-slash');
   clearTimeout(spriteTimeout);
-  spriteTimeout = setTimeout(() => DOM.sprite.classList.remove('sprite-pulse'), 140);
+  spriteTimeout = setTimeout(() => DOM.sprite.classList.remove('sprite-pulse', 'sprite-slash'), 280);
+}
+
+// 每次吐纳在人物上方飘出灵气与灵石光字
+function spawnCultivatePopup(qiGain, stoneGain, isCrit = false) {
+  if (!DOM.fxLayer) return;
+  const el = document.createElement('div');
+  el.className = 'cultivate-popup';
+  const offsetX = 72 + (Math.random() - 0.5) * 18;
+  el.style.left = `${offsetX}%`;
+  el.style.bottom = '46px';
+  el.style.color = isCrit ? '#fde047' : '#5eead4';
+  el.innerHTML = isCrit
+    ? `✨ 顿悟 +${fmt(qiGain)}修为 • +${fmt(stoneGain)}灵石`
+    : `+${fmt(qiGain)} 修为 <span style="color:#fcd34d">+${fmt(stoneGain)}🪙</span>`;
+  DOM.fxLayer.appendChild(el);
+  while (DOM.fxLayer.children.length > 8) DOM.fxLayer.firstChild.remove();
+  setTimeout(() => el.remove(), 1100);
+}
+
+// 切换人界 / 仙界 / 至高全屏画风与飘浮仙灵微粒
+let currentThemeTier = '';
+function updateRealmTheme() {
+  const tier = state.realmIdx >= 17 ? 'supreme' : (state.ascended || state.realmIdx >= 9 ? 'immortal' : 'mortal');
+  if (currentThemeTier === tier) return;
+  currentThemeTier = tier;
+
+  document.body.classList.toggle('theme-immortal', tier === 'immortal' || tier === 'supreme');
+  document.body.classList.toggle('theme-supreme', tier === 'supreme');
+
+  if (!DOM.ambientSky) return;
+  DOM.ambientSky.innerHTML = '';
+
+  const moteCount = tier === 'supreme' ? 28 : tier === 'immortal' ? 22 : 10;
+  const colors = tier === 'supreme'
+    ? ['#fde047', '#f0abfc', '#38bdf8', '#ffffff']
+    : tier === 'immortal'
+      ? ['#fde047', '#5eead4', '#fef08a', '#ffffff']
+      : ['#2dd4bf', '#38bdf8', '#94a3b8'];
+
+  for (let i = 0; i < moteCount; i++) {
+    const m = document.createElement('span');
+    m.className = 'ambient-mote';
+    const sz = tier === 'mortal' ? (2 + Math.random() * 2.5) : (3 + Math.random() * 4.5);
+    const col = colors[i % colors.length];
+    m.style.width = `${sz}px`;
+    m.style.height = `${sz}px`;
+    m.style.left = `${Math.random() * 100}%`;
+    m.style.background = col;
+    m.style.boxShadow = `0 0 ${sz * 2.8}px ${col}`;
+    m.style.setProperty('--dur', `${8 + Math.random() * 10}s`);
+    m.style.setProperty('--delay', `${-Math.random() * 12}s`);
+    DOM.ambientSky.appendChild(m);
+  }
+}
+
+// 随境界演变的洞府/宗门/豪华凌霄仙宫/鸿蒙天宫 SVG 场景画卷
+function getStageScenerySVG(realmIdx, ascended) {
+  // 1. 至高界域：鸿蒙太初天宫（星海神殿、旋转大道符环、紫金神光柱）
+  if (realmIdx >= 17) {
+    return `
+      <svg viewBox="0 0 420 190" preserveAspectRatio="xMidYMid slice" class="w-full h-full opacity-95">
+        <defs>
+          <linearGradient id="supBeam" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fde047" stop-opacity="0.48"/>
+            <stop offset="100%" stop-color="#c084fc" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="supRoof" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#f59e0b"/>
+            <stop offset="50%" stop-color="#fef08a"/>
+            <stop offset="100%" stop-color="#e879f9"/>
+          </linearGradient>
+        </defs>
+        <!-- 天光神柱 -->
+        <polygon points="150,0 270,0 320,190 100,190" fill="url(#supBeam)" class="scenery-sunbeam"/>
+        <!-- 旋转鸿蒙道环 -->
+        <g style="transform-origin:210px 85px;" class="avatar-spin-slow" opacity="0.45">
+          <circle cx="210" cy="85" r="76" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="10 6"/>
+          <circle cx="210" cy="85" r="60" fill="none" stroke="#f0abfc" stroke-width="1.2" stroke-dasharray="5 5"/>
+        </g>
+        <!-- 星辰 -->
+        <circle cx="48" cy="28" r="2" fill="#fde047" class="scenery-star"/>
+        <circle cx="356" cy="34" r="2.2" fill="#f0abfc" class="scenery-star" style="animation-delay:0.8s"/>
+        <circle cx="110" cy="42" r="1.8" fill="#38bdf8" class="scenery-star" style="animation-delay:1.5s"/>
+        <!-- 悬浮白玉仙岛底座 -->
+        <path d="M85,154 Q210,136 335,154 L300,185 Q210,194 120,185 Z" fill="#1e1b4b" stroke="#fde047" stroke-width="1.4" opacity="0.9"/>
+        <path d="M105,152 Q210,138 315,152 L298,162 Q210,152 122,162 Z" fill="#f8fafc" opacity="0.88"/>
+        <!-- 鸿蒙主殿（三层重檐金顶） -->
+        <rect x="148" y="108" width="124" height="44" fill="#3b0764" stroke="#fde047" stroke-width="1.2"/>
+        <rect x="164" y="80" width="92" height="30" fill="#4c1d95" stroke="#fde047" stroke-width="1.1"/>
+        <rect x="182" y="58" width="56" height="22" fill="#581c87" stroke="#fde047" stroke-width="1"/>
+        <!-- 三层飞檐金顶 -->
+        <path d="M126,112 Q210,94 294,112 L278,103 Q210,88 142,103 Z" fill="url(#supRoof)"/>
+        <path d="M148,84 Q210,68 272,84 L258,76 Q210,63 162,76 Z" fill="url(#supRoof)"/>
+        <path d="M168,61 Q210,44 252,61 L210,36 Z" fill="url(#supRoof)"/>
+        <circle cx="210" cy="32" r="4.5" fill="#ffffff" class="palace-glow"/>
+        <!-- 发光仙门与廊柱 -->
+        <rect x="197" y="122" width="26" height="30" rx="12" fill="#fde047" opacity="0.88" class="palace-glow"/>
+        <line x1="162" y1="110" x2="162" y2="152" stroke="#fde047" stroke-width="2.5"/>
+        <line x1="258" y1="110" x2="258" y2="152" stroke="#fde047" stroke-width="2.5"/>
+        <!-- 左右配殿 -->
+        <rect x="96" y="126" width="44" height="26" fill="#2e1065" stroke="#f0abfc" stroke-width="1"/>
+        <path d="M86,128 Q118,114 150,128 L118,110 Z" fill="url(#supRoof)"/>
+        <rect x="280" y="126" width="44" height="26" fill="#2e1065" stroke="#f0abfc" stroke-width="1"/>
+        <path d="M270,128 Q302,114 334,128 L302,110 Z" fill="url(#supRoof)"/>
+        <!-- 紫金流云 -->
+        <g class="scenery-cloud" opacity="0.72">
+          <ellipse cx="90" cy="170" rx="58" ry="14" fill="#f5d0fe" opacity="0.35"/>
+          <ellipse cx="325" cy="168" rx="64" ry="15" fill="#fef08a" opacity="0.32"/>
+        </g>
+      </svg>
+    `;
+  }
+
+  // 2. 仙界（人仙 ~ 大罗金仙）：豪华凌霄玉宇仙宫（金顶飞檐、白玉阶梯、仙灯、仙鹤、流云天光）
+  if (ascended || realmIdx >= 9) {
+    return `
+      <svg viewBox="0 0 420 190" preserveAspectRatio="xMidYMid slice" class="w-full h-full opacity-95">
+        <defs>
+          <linearGradient id="immSun" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fef08a" stop-opacity="0.45"/>
+            <stop offset="100%" stop-color="#5eead4" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="goldRoof" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#d97706"/>
+            <stop offset="50%" stop-color="#fde047"/>
+            <stop offset="100%" stop-color="#f59e0b"/>
+          </linearGradient>
+          <linearGradient id="jadeWall" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f8fafc"/>
+            <stop offset="100%" stop-color="#cbd5e1"/>
+          </linearGradient>
+        </defs>
+        <!-- 仙界天光倾泻 -->
+        <polygon points="120,0 265,0 330,190 70,190" fill="url(#immSun)" class="scenery-sunbeam"/>
+        <!-- 仙辉灵日 -->
+        <circle cx="195" cy="52" r="34" fill="#fef08a" opacity="0.22" class="palace-glow"/>
+        <!-- 远景浮空仙山 -->
+        <path d="M18,128 L52,72 L86,128 Q52,142 18,128 Z" fill="#0f766e" opacity="0.45"/>
+        <path d="M332,122 L366,64 L402,122 Q366,138 332,122 Z" fill="#1e3a8a" opacity="0.45"/>
+        <!-- 凌空飞翔仙鹤 -->
+        <g class="scenery-crane" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round">
+          <path d="M62,48 Q68,42 74,47 Q80,42 86,48"/>
+          <path d="M90,34 Q95,29 100,33 Q105,29 110,34" opacity="0.75"/>
+        </g>
+        <!-- 豪华凌霄仙宫 · 白玉底座与汉白玉阶梯 -->
+        <path d="M74,154 Q195,138 316,154 L294,178 Q195,188 96,178 Z" fill="url(#jadeWall)" stroke="#fde047" stroke-width="1.2" opacity="0.92"/>
+        <polygon points="178,154 212,154 224,186 166,186" fill="#ffffff" opacity="0.9"/>
+        <line x1="174" y1="163" x2="216" y2="163" stroke="#cbd5e1" stroke-width="1.2"/>
+        <line x1="171" y1="171" x2="219" y2="171" stroke="#cbd5e1" stroke-width="1.2"/>
+        <line x1="168" y1="179" x2="222" y2="179" stroke="#cbd5e1" stroke-width="1.2"/>
+        <!-- 左右回廊与配殿 -->
+        <rect x="88" y="128" width="48" height="26" fill="#7f1d1d" stroke="#fde047" stroke-width="1"/>
+        <path d="M76,130 Q112,115 148,130 L112,111 Z" fill="url(#goldRoof)"/>
+        <rect x="254" y="128" width="48" height="26" fill="#7f1d1d" stroke="#fde047" stroke-width="1"/>
+        <path d="M242,130 Q278,115 314,130 L278,111 Z" fill="url(#goldRoof)"/>
+        <!-- 主仙宫（朱柱金顶重檐大殿） -->
+        <rect x="136" y="108" width="118" height="46" fill="#991b1b" stroke="#fde047" stroke-width="1.3"/>
+        <rect x="154" y="82" width="82" height="28" fill="#b91c1c" stroke="#fde047" stroke-width="1.1"/>
+        <!-- 朱红雕龙廊柱 -->
+        <line x1="148" y1="110" x2="148" y2="154" stroke="#fde047" stroke-width="2.4"/>
+        <line x1="172" y1="110" x2="172" y2="154" stroke="#fde047" stroke-width="2.4"/>
+        <line x1="218" y1="110" x2="218" y2="154" stroke="#fde047" stroke-width="2.4"/>
+        <line x1="242" y1="110" x2="242" y2="154" stroke="#fde047" stroke-width="2.4"/>
+        <!-- 金光仙殿大门 -->
+        <rect x="184" y="122" width="22" height="32" rx="10" fill="#fef08a" class="palace-glow"/>
+        <!-- 重檐翘角金瓦顶 -->
+        <path d="M116,112 Q195,94 274,112 L260,102 Q195,88 130,102 Z" fill="url(#goldRoof)"/>
+        <path d="M136,86 Q195,66 254,86 L195,52 Z" fill="url(#goldRoof)"/>
+        <circle cx="195" cy="49" r="3.8" fill="#ffffff" class="palace-glow"/>
+        <!-- 殿前发光仙灯 -->
+        <circle cx="136" cy="116" r="3.2" fill="#fde047" class="palace-glow"/>
+        <circle cx="254" cy="116" r="3.2" fill="#fde047" class="palace-glow"/>
+        <circle cx="88" cy="134" r="2.6" fill="#5eead4" class="palace-glow"/>
+        <circle cx="302" cy="134" r="2.6" fill="#5eead4" class="palace-glow"/>
+        <!-- 缭绕白玉仙云海 -->
+        <g class="scenery-cloud">
+          <ellipse cx="72" cy="172" rx="64" ry="16" fill="#ffffff" opacity="0.34"/>
+          <ellipse cx="145" cy="182" rx="52" ry="13" fill="#e0f2fe" opacity="0.28"/>
+        </g>
+        <g class="scenery-cloud-slow">
+          <ellipse cx="315" cy="172" rx="68" ry="16" fill="#fef08a" opacity="0.26"/>
+          <ellipse cx="385" cy="162" rx="45" ry="12" fill="#ffffff" opacity="0.3"/>
+        </g>
+      </svg>
+    `;
+  }
+
+  // 3. 人界后期（化神 ~ 渡劫）：云巅古宗大殿
+  if (realmIdx >= 4) {
+    return `
+      <svg viewBox="0 0 420 190" preserveAspectRatio="xMidYMid slice" class="w-full h-full opacity-80">
+        <path d="M0,190 L65,98 L145,155 L220,76 L310,148 L380,92 L420,190 Z" fill="#0f172a" opacity="0.55"/>
+        <!-- 云巅宗门大殿 -->
+        <rect x="176" y="96" width="66" height="32" fill="#1e293b" stroke="#94a3b8" stroke-width="1"/>
+        <path d="M162,99 Q209,84 256,99 L209,72 Z" fill="#334155" stroke="#fbbf24" stroke-width="1"/>
+        <rect x="202" y="109" width="14" height="19" rx="6" fill="#fbbf24" opacity="0.7" class="palace-glow"/>
+        <g class="scenery-cloud">
+          <ellipse cx="105" cy="166" rx="70" ry="14" fill="#cbd5e1" opacity="0.16"/>
+          <ellipse cx="310" cy="160" rx="68" ry="14" fill="#cbd5e1" opacity="0.16"/>
+        </g>
+      </svg>
+    `;
+  }
+
+  // 4. 人界初期（炼气 ~ 元婴）：青山灵雾与竹林小筑
+  return `
+    <svg viewBox="0 0 420 190" preserveAspectRatio="xMidYMid slice" class="w-full h-full opacity-75">
+      <path d="M0,190 L75,112 L155,160 L248,96 L335,155 L420,118 L420,190 Z" fill="#090c15" opacity="0.48"/>
+      <!-- 山腰简朴小亭 -->
+      <rect x="195" y="118" width="32" height="22" fill="#1e293b" opacity="0.85"/>
+      <path d="M186,120 Q211,106 236,120 L211,102 Z" fill="#334155" stroke="#5eead4" stroke-width="0.9"/>
+      <circle cx="211" cy="131" r="3" fill="#fde047" opacity="0.75" class="palace-glow"/>
+      <g class="scenery-cloud-slow">
+        <ellipse cx="110" cy="172" rx="65" ry="12" fill="#5eead4" opacity="0.12"/>
+        <ellipse cx="315" cy="170" rx="72" ry="13" fill="#94a3b8" opacity="0.12"/>
+      </g>
+    </svg>
+  `;
+}
+
+
+
+// 21 大境界专属修士站姿法相 SVG（持剑挥舞 / 御风剑舞 / 剑指御剑 / 以指斩空 / 万剑仙阵）
+const AVATAR_STYLES = [
+  // 0~1: 持剑起势 (sword_stance)
+  { robe: '#64748b', trim: '#cbd5e1', aura: '#2dd4bf', blade: '#e2e8f0', skin: '#fde68a', hair: '#1e293b', crown: 'none',     pose: 'sword_stance',  fx: 'wisps' },      // 0 炼气期
+  { robe: '#0f766e', trim: '#5eead4', aura: '#2dd4bf', blade: '#5eead4', skin: '#fde68a', hair: '#1e293b', crown: 'pin',      pose: 'sword_stance',  fx: 'platform' },   // 1 筑基期
+  // 2~4: 御风剑舞 (sword_dance)
+  { robe: '#0369a1', trim: '#fcd34d', aura: '#fbbf24', blade: '#fde047', skin: '#fef08a', hair: '#0f172a', crown: 'pin',      pose: 'sword_dance',   fx: 'core' },       // 2 金丹期
+  { robe: '#4338ca', trim: '#e879f9', aura: '#c084fc', blade: '#f0abfc', skin: '#fef3c7', hair: '#0f172a', crown: 'circlet',  pose: 'sword_dance',   fx: 'soul' },       // 3 元婴期
+  { robe: '#312e81', trim: '#38bdf8', aura: '#38bdf8', blade: '#7dd3fc', skin: '#fef3c7', hair: '#0f172a', crown: 'circlet',  pose: 'sword_dance',   fx: 'dualring' },   // 4 化神期
+  // 5~7: 剑指御剑 (sword_finger)
+  { robe: '#581c87', trim: '#c084fc', aura: '#a855f7', blade: '#d8b4fe', skin: '#fef3c7', hair: '#1e1b4b', crown: 'crown',    pose: 'sword_finger',  fx: 'void' },       // 5 炼虚期
+  { robe: '#1e3a8a', trim: '#fbbf24', aura: '#60a5fa', blade: '#93c5fd', skin: '#fef9c3', hair: '#0f172a', crown: 'crown',    pose: 'sword_finger',  fx: 'swords' },     // 6 合体期
+  { robe: '#b45309', trim: '#fef08a', aura: '#fbbf24', blade: '#fef08a', skin: '#fef9c3', hair: '#1c1917', crown: 'crown',    pose: 'sword_finger',  fx: 'lotus' },      // 7 大乘期
+  // 8: 剑指引雷 (thunder_finger)
+  { robe: '#4c1d95', trim: '#fde047', aura: '#a855f7', blade: '#fde047', skin: '#fef9c3', hair: '#f8fafc', crown: 'crown',    pose: 'thunder_finger',fx: 'lightning' },  // 8 渡劫期
+  // 9~12: 仙界万剑大阵 (immortal_array)
+  { robe: '#f1f5f9', trim: '#2dd4bf', aura: '#5eead4', blade: '#99f6e4', skin: '#fffbeb', hair: '#e2e8f0', crown: 'immortal', pose: 'immortal_array',fx: 'ribbon' },     // 9 人仙
+  { robe: '#d97706', trim: '#fef08a', aura: '#f59e0b', blade: '#fde68a', skin: '#fffbeb', hair: '#f1f5f9', crown: 'immortal', pose: 'immortal_array',fx: 'earthring' },  // 10 地仙
+  { robe: '#0284c7', trim: '#e0f2fe', aura: '#38bdf8', blade: '#bae6fd', skin: '#fffbeb', hair: '#f8fafc', crown: 'immortal', pose: 'immortal_array',fx: 'skyhalo' },    // 11 天仙
+  { robe: '#f8fafc', trim: '#fbbf24', aura: '#fde047', blade: '#fef08a', skin: '#fffbeb', hair: '#fef08a', crown: 'immortal', pose: 'immortal_array',fx: 'sunwheel' },   // 12 真仙
+  // 13~16: 以指代剑 · 斩裂星穹 (cosmic_finger)
+  { robe: '#6d28d9', trim: '#fcd34d', aura: '#c084fc', blade: '#e9d5ff', skin: '#fffbeb', hair: '#f8fafc', crown: 'immortal', pose: 'cosmic_finger', fx: 'taiji' },      // 13 玄仙
+  { robe: '#f59e0b', trim: '#ffffff', aura: '#fde047', blade: '#ffffff', skin: '#fffbeb', hair: '#fef08a', crown: 'supreme',  pose: 'cosmic_finger', fx: 'mandala' },    // 14 金仙
+  { robe: '#0e7490', trim: '#fde047', aura: '#22d3ee', blade: '#a5f3fc', skin: '#fffbeb', hair: '#f8fafc', crown: 'supreme',  pose: 'cosmic_finger', fx: 'chrono' },     // 15 太乙金仙
+  { robe: '#3730a3', trim: '#f0abfc', aura: '#e879f9', blade: '#f5d0fe', skin: '#fffbeb', hair: '#ffffff', crown: 'supreme',  pose: 'cosmic_finger', fx: 'daluo' },      // 16 大罗金仙
+  // 17~20: 诸天剑尊 · 鸿蒙剑意 (supreme_dao)
+  { robe: '#991b1b', trim: '#fde047', aura: '#fb7185', blade: '#fecdd3', skin: '#fffbeb', hair: '#ffffff', crown: 'supreme',  pose: 'supreme_dao',   fx: 'threeorbs' },  // 17 准圣
+  { robe: '#ffffff', trim: '#fbbf24', aura: '#fde047', blade: '#fef08a', skin: '#fffbeb', hair: '#ffffff', crown: 'supreme',  pose: 'supreme_dao',   fx: 'sage' },       // 18 圣人
+  { robe: '#3b0764', trim: '#fde047', aura: '#c084fc', blade: '#fde047', skin: '#fffbeb', hair: '#ffffff', crown: 'supreme',  pose: 'supreme_dao',   fx: 'daodisc' },    // 19 道祖
+  { robe: '#09090b', trim: '#f0abfc', aura: '#38bdf8', blade: '#f0abfc', skin: '#fffbeb', hair: '#fde047', crown: 'supreme',  pose: 'supreme_dao',   fx: 'multiverse' }  // 20 界尊
+];
+
+function getCultivatorAvatarSVG(realmIdx, size = 94, subIdx = 0) {
+  const s = AVATAR_STYLES[Math.min(AVATAR_STYLES.length - 1, Math.max(0, realmIdx || 0))];
+  const uid = `av_${realmIdx}_${subIdx}_${size}`;
+  const sub = Math.min(3, Math.max(0, subIdx || 0));
+
+  // 每个小境界（初期/中期/后期/大圆满）都有肉眼可见的外观进阶！
+  let subStageFx = '';
+  if (sub >= 1) {
+    // 绕身灵珠（中期1颗、后期2颗、大圆满3颗）
+    const orbCoords = [
+      [48, 8],
+      [82, 66],
+      [14, 66]
+    ].slice(0, sub);
+    const orbs = orbCoords.map(([ox, oy], idx) =>
+      `<circle cx="${ox}" cy="${oy}" r="${sub === 3 ? 3.2 : 2.6}" fill="${idx === 0 ? '#fde047' : s.aura}" stroke="#ffffff" stroke-width="0.7"/>`
+    ).join('');
+    subStageFx += `<g class="av-sub-orbs">${orbs}</g>`;
+  }
+  if (sub >= 2) {
+    // 后期：眉心开启灵印道纹
+    subStageFx += `<polygon points="48,19.2 49.4,21.5 48,23.2 46.6,21.5" fill="${s.aura}" stroke="#ffffff" stroke-width="0.35"/>`;
+  }
+  if (sub === 3) {
+    // 大圆满：脑后浮现璀璨金色圆满光轮 + 身周灵辉
+    subStageFx += `<circle cx="48" cy="24" r="14.5" fill="none" stroke="#fde047" stroke-width="1.8" stroke-dasharray="4 2.5" class="av-perfection-halo"/>`;
+  }
+
+  // 仙界以上自带飘逸仙气长绫
+  const immortalScarf = realmIdx >= 9
+    ? `<path d="M36 37 Q22 50 18 72 Q26 62 34 54" fill="none" stroke="${s.trim}" stroke-width="2.4" stroke-linecap="round" opacity="0.85"/>
+       <path d="M60 37 Q74 52 78 74 Q70 63 62 55" fill="none" stroke="${s.aura}" stroke-width="2.4" stroke-linecap="round" opacity="0.85"/>`
+    : '';
+  const isFloating = realmIdx >= 8;
+
+  // 背景光环 / 阵法特效
+  let backFx = '';
+  if (s.fx === 'wisps') {
+    backFx = `<circle cx="18" cy="46" r="2.5" fill="${s.aura}" opacity="0.65"/><circle cx="82" cy="34" r="2" fill="${s.aura}" opacity="0.55"/>`;
+  } else if (s.fx === 'platform') {
+    backFx = `<ellipse cx="48" cy="91" rx="28" ry="5" fill="none" stroke="${s.aura}" stroke-width="1.8" opacity="0.8"/>`;
+  } else if (s.fx === 'core') {
+    backFx = `<circle cx="48" cy="42" r="22" fill="none" stroke="#fde047" stroke-width="1.4" stroke-dasharray="5 4" class="avatar-spin-slow" opacity="0.75"/>`;
+  } else if (s.fx === 'soul') {
+    backFx = `<circle cx="48" cy="28" r="18" fill="none" stroke="${s.aura}" stroke-width="1.8" stroke-dasharray="4 3" class="avatar-spin-slow"/><circle cx="48" cy="10" r="3" fill="#f0abfc"/>`;
+  } else if (s.fx === 'dualring') {
+    backFx = `<circle cx="48" cy="48" r="34" fill="none" stroke="${s.aura}" stroke-width="1.6" stroke-dasharray="8 4" class="avatar-spin-slow"/><circle cx="48" cy="48" r="25" fill="none" stroke="#fde047" stroke-width="1.2" stroke-dasharray="5 5" class="avatar-spin-rev"/>`;
+  } else if (s.fx === 'void') {
+    backFx = `<polygon points="48,8 84,48 48,88 12,48" fill="none" stroke="${s.aura}" stroke-width="1.6" opacity="0.7" class="avatar-spin-slow"/>`;
+  } else if (s.fx === 'swords') {
+    backFx = `<circle cx="48" cy="46" r="33" fill="none" stroke="${s.trim}" stroke-width="1.5" stroke-dasharray="6 4" class="avatar-spin-slow"/>`;
+  } else if (s.fx === 'lotus') {
+    backFx = `<circle cx="48" cy="34" r="21" fill="none" stroke="#fde047" stroke-width="1.8" opacity="0.8"/><path d="M22 90 Q35 81 48 92 Q61 81 74 90 Q61 97 48 95 Q35 97 22 90 Z" fill="#f59e0b" opacity="0.8"/>`;
+  } else if (s.fx === 'lightning') {
+    backFx = `<circle cx="48" cy="48" r="36" fill="none" stroke="#c084fc" stroke-width="1.8" class="avatar-spin-slow"/><polyline points="12,24 22,35 16,42 26,53" fill="none" stroke="#fde047" stroke-width="2.2"/><polyline points="86,18 76,30 82,36 72,48" fill="none" stroke="#fde047" stroke-width="2.2"/>`;
+  } else if (s.fx === 'ribbon') {
+    backFx = `<circle cx="48" cy="28" r="19" fill="none" stroke="#5eead4" stroke-width="2" opacity="0.8"/><path d="M12 52 Q28 28 48 44 Q68 60 86 32" fill="none" stroke="#5eead4" stroke-width="2.8" stroke-linecap="round" opacity="0.7"/>`;
+  } else if (s.fx === 'earthring' || s.fx === 'skyhalo' || s.fx === 'sunwheel') {
+    backFx = `<circle cx="48" cy="46" r="36" fill="none" stroke="${s.aura}" stroke-width="2" stroke-dasharray="10 4" class="avatar-spin-slow"/><circle cx="48" cy="26" r="16" fill="none" stroke="${s.trim}" stroke-width="1.8" opacity="0.85"/>`;
+  } else if (s.fx === 'taiji' || s.fx === 'mandala' || s.fx === 'chrono') {
+    backFx = `<circle cx="48" cy="48" r="38" fill="none" stroke="${s.aura}" stroke-width="2" stroke-dasharray="6 3" class="avatar-spin-slow"/><circle cx="48" cy="48" r="28" fill="none" stroke="${s.trim}" stroke-width="1.6" stroke-dasharray="12 4" class="avatar-spin-rev"/>`;
+  } else if (s.fx === 'daluo' || s.fx === 'threeorbs' || s.fx === 'sage') {
+    backFx = `<circle cx="48" cy="48" r="40" fill="none" stroke="#fde047" stroke-width="2.2" stroke-dasharray="8 4" class="avatar-spin-slow"/><circle cx="48" cy="48" r="30" fill="none" stroke="${s.aura}" stroke-width="1.8" class="avatar-spin-rev"/><circle cx="48" cy="8" r="3.5" fill="#fde047"/><circle cx="14" cy="64" r="3" fill="${s.aura}"/><circle cx="84" cy="64" r="3" fill="${s.aura}"/>`;
+  } else if (s.fx === 'daodisc' || s.fx === 'multiverse') {
+    backFx = `<g class="avatar-spin-slow"><circle cx="48" cy="48" r="42" fill="none" stroke="#fde047" stroke-width="2.4" stroke-dasharray="10 3 3 3"/><circle cx="48" cy="48" r="33" fill="none" stroke="#f0abfc" stroke-width="1.8" stroke-dasharray="6 4"/><circle cx="48" cy="6" r="3.5" fill="#38bdf8"/><circle cx="90" cy="48" r="3.5" fill="#fde047"/><circle cx="48" cy="90" r="3.5" fill="#f0abfc"/><circle cx="6" cy="48" r="3.5" fill="#34d399"/></g>`;
+  }
+
+  // 头冠 / 发簪
+  let crownSvg = '';
+  if (s.crown === 'pin') {
+    crownSvg = `<line x1="39" y1="13" x2="57" y2="13" stroke="${s.trim}" stroke-width="1.8" stroke-linecap="round"/>`;
+  } else if (s.crown === 'circlet') {
+    crownSvg = `<path d="M40 19 Q48 15 56 19" fill="none" stroke="${s.trim}" stroke-width="2"/><circle cx="48" cy="16" r="2" fill="#fde047"/>`;
+  } else if (s.crown === 'crown') {
+    crownSvg = `<polygon points="41,16 43,9 48,13 53,9 55,16" fill="${s.trim}" stroke="#92400e" stroke-width="0.7"/>`;
+  } else if (s.crown === 'immortal') {
+    crownSvg = `<polygon points="39,16 43,7 48,12 53,7 57,16" fill="#fde047"/><circle cx="48" cy="7" r="2.2" fill="#ffffff"/>`;
+  } else if (s.crown === 'supreme') {
+    crownSvg = `<polygon points="38,16 42,6 48,11 54,6 58,16" fill="#fde047" stroke="#f59e0b" stroke-width="0.9"/><circle cx="48" cy="5" r="2.8" fill="#ffffff"/>`;
+  }
+
+  // 站姿剑招与武器/剑气图层
+  let armsAndWeapon = '';
+  if (s.pose === 'sword_stance') {
+    // 持剑起势：左手背负/平展，右手执灵剑斜指苍穹，伴随剑气微光
+    armsAndWeapon = `
+      <path d="M39 38 Q29 44 25 51" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M39 38 Q29 44 25 51" fill="none" stroke="${s.trim}" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="24" cy="52" r="2.6" fill="${s.skin}"/>
+      <g class="av-sword-sway">
+        <path d="M57 38 Q65 44 70 48" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="71" cy="49" r="2.6" fill="${s.skin}"/>
+        <!-- 灵剑 -->
+        <line x1="68" y1="53" x2="73" y2="45" stroke="#92400e" stroke-width="2.4" stroke-linecap="round"/>
+        <line x1="68" y1="45" x2="76" y2="49" stroke="${s.trim}" stroke-width="2.2" stroke-linecap="round"/>
+        <polygon points="73,45 91,14 76,47" fill="${s.blade}" stroke="#ffffff" stroke-width="0.7"/>
+      </g>
+      <path d="M74 12 Q94 34 78 62" fill="none" stroke="${s.aura}" stroke-width="2.4" stroke-linecap="round" class="av-slash-arc"/>
+    `;
+  } else if (s.pose === 'sword_dance') {
+    // 御风剑舞：宽袖飞扬，高举长剑划出大弧度剑舞斩芒
+    armsAndWeapon = `
+      <path d="M39 38 Q26 32 19 37" fill="none" stroke="${s.robe}" stroke-width="6.5" stroke-linecap="round"/>
+      <path d="M22 39 Q16 50 20 56" fill="none" stroke="${s.trim}" stroke-width="1.6" opacity="0.85"/>
+      <circle cx="18" cy="38" r="2.6" fill="${s.skin}"/>
+      <g class="av-sword-dance">
+        <path d="M57 37 Q67 30 74 24" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="75" cy="23" r="2.6" fill="${s.skin}"/>
+        <!-- 剑舞长剑 -->
+        <line x1="71" y1="26" x2="78" y2="20" stroke="#b45309" stroke-width="2.4" stroke-linecap="round"/>
+        <line x1="74" y1="19" x2="79" y2="25" stroke="#fde047" stroke-width="2" stroke-linecap="round"/>
+        <polygon points="77,21 95,40 75,24" fill="${s.blade}" stroke="#ffffff" stroke-width="0.8"/>
+      </g>
+      <!-- 挥舞剑弧 -->
+      <path d="M68 12 Q96 36 74 72" fill="none" stroke="${s.blade}" stroke-width="3" stroke-linecap="round" class="av-slash-arc"/>
+      <path d="M62 18 Q86 38 68 66" fill="none" stroke="${s.aura}" stroke-width="1.6" stroke-linecap="round" class="av-slash-arc" opacity="0.7"/>
+    `;
+  } else if (s.pose === 'sword_finger') {
+    // 剑指御剑：右手并指如剑向前点出，指尖绽放剑芒，身侧悬浮飞剑呼啸！
+    armsAndWeapon = `
+      <path d="M39 38 Q32 48 36 55" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+      <!-- 右手剑指 -->
+      <path d="M57 38 Q67 36 75 33" fill="none" stroke="${s.robe}" stroke-width="5.8" stroke-linecap="round"/>
+      <line x1="75" y1="33" x2="82" y2="30" stroke="${s.skin}" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="82" cy="30" r="3" fill="${s.blade}" opacity="0.9"/>
+      <!-- 悬浮御使飞剑 -->
+      <g class="av-sword-float">
+        <polygon points="10,28 34,24 12,31" fill="${s.blade}" stroke="#ffffff" stroke-width="0.6"/>
+        <line x1="12" y1="26" x2="13" y2="32" stroke="#fde047" stroke-width="1.6"/>
+        <polygon points="62,64 92,52 64,67" fill="${s.blade}" stroke="#ffffff" stroke-width="0.7"/>
+        <line x1="63" y1="62" x2="66" y2="68" stroke="#fde047" stroke-width="1.8"/>
+      </g>
+      <!-- 剑指斩击剑气 -->
+      <path d="M78 16 Q96 32 82 54" fill="none" stroke="${s.blade}" stroke-width="3" stroke-linecap="round" class="av-slash-arc"/>
+    `;
+  } else if (s.pose === 'thunder_finger') {
+    // 渡劫剑指：单指擎天引雷，雷剑环绕
+    armsAndWeapon = `
+      <path d="M39 38 Q29 44 26 52" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M57 38 Q66 28 70 18" fill="none" stroke="${s.robe}" stroke-width="5.8" stroke-linecap="round"/>
+      <line x1="70" y1="18" x2="73" y2="11" stroke="${s.skin}" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="73" cy="11" r="3.5" fill="#fde047"/>
+      <g class="av-sword-float">
+        <polygon points="76,58 94,30 80,60" fill="#fde047" stroke="#ffffff" stroke-width="0.8"/>
+      </g>
+      <path d="M62 8 Q92 26 84 62" fill="none" stroke="#fde047" stroke-width="3" stroke-linecap="round" class="av-slash-arc"/>
+    `;
+  } else if (s.pose === 'immortal_array') {
+    // 仙界万剑大阵：仙人凌空，剑指平推，四柄仙剑成阵环绕斩击
+    armsAndWeapon = `
+      <path d="M39 38 Q28 36 22 39" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="21" cy="39" r="2.4" fill="${s.skin}"/>
+      <path d="M57 38 Q68 35 76 32" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+      <line x1="76" y1="32" x2="83" y2="29" stroke="${s.skin}" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="83" cy="29" r="3" fill="${s.blade}"/>
+      <!-- 凌空四柄仙剑 -->
+      <g class="av-sword-float">
+        <polygon points="10,20 26,16 12,23" fill="${s.blade}" stroke="#fff" stroke-width="0.5"/>
+        <polygon points="8,54 24,50 10,57" fill="${s.blade}" stroke="#fff" stroke-width="0.5"/>
+        <polygon points="70,18 90,12 72,21" fill="${s.blade}" stroke="#fff" stroke-width="0.6"/>
+        <polygon points="68,62 90,54 70,65" fill="${s.blade}" stroke="#fff" stroke-width="0.6"/>
+      </g>
+      <path d="M74 12 Q98 34 78 64" fill="none" stroke="${s.blade}" stroke-width="3.2" stroke-linecap="round" class="av-slash-arc"/>
+    `;
+  } else if (s.pose === 'cosmic_finger') {
+    // 以指斩空：双指化作数丈星穹剑气，一指劈开虚空
+    armsAndWeapon = `
+      <path d="M39 38 Q30 46 33 54" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M57 38 Q68 34 75 29" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+      <line x1="75" y1="29" x2="82" y2="25" stroke="${s.skin}" stroke-width="2.4" stroke-linecap="round"/>
+      <!-- 指尖爆发巨大星穹剑芒 -->
+      <g class="av-slash-arc">
+        <path d="M62 8 Q98 30 72 74" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M66 12 Q94 32 74 68" fill="none" stroke="${s.aura}" stroke-width="6" stroke-linecap="round" opacity="0.45"/>
+        <polygon points="81,25 97,14 85,29" fill="#ffffff"/>
+      </g>
+    `;
+  } else {
+    // supreme_dao: 诸天剑尊 — 凌空负手，双神剑护体 + 双重鸿蒙剑气斩裂万界
+    armsAndWeapon = `
+      <path d="M39 38 Q26 32 20 26" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="19" cy="25" r="2.6" fill="#fde047"/>
+      <path d="M57 38 Q70 33 78 27" fill="none" stroke="${s.robe}" stroke-width="6" stroke-linecap="round"/>
+      <line x1="78" y1="27" x2="85" y2="23" stroke="${s.skin}" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="85" cy="23" r="3.4" fill="#ffffff"/>
+      <g class="av-sword-float">
+        <polygon points="6,40 28,28 9,44" fill="#fde047" stroke="#ffffff" stroke-width="0.7"/>
+        <polygon points="66,68 94,50 69,72" fill="${s.blade}" stroke="#ffffff" stroke-width="0.7"/>
+      </g>
+      <g class="av-slash-arc">
+        <path d="M58 6 Q98 32 70 80" fill="none" stroke="#fde047" stroke-width="3.6" stroke-linecap="round"/>
+        <path d="M66 12 Q94 36 76 74" fill="none" stroke="${s.aura}" stroke-width="2.4" stroke-linecap="round"/>
+      </g>
+    `;
+  }
+
+  // 飘逸仙靴 / 凌空脚部
+  const feetSvg = isFloating
+    ? `<ellipse cx="48" cy="92" rx="18" ry="3.5" fill="${s.aura}" opacity="0.45"/>`
+    : `<ellipse cx="42" cy="89" rx="4.5" ry="2.5" fill="#0f172a"/><ellipse cx="54" cy="89" rx="4.5" ry="2.5" fill="#0f172a"/>`;
+
+  return `
+    <svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-[0_0_12px_rgba(0,0,0,0.65)] overflow-visible">
+      <defs>
+        <radialGradient id="${uid}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="${s.aura}" stop-opacity="0.48"/>
+          <stop offset="100%" stop-color="${s.aura}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="48" cy="50" r="45" fill="url(#${uid})"/>
+      ${backFx}
+      ${feetSvg}
+      <!-- 站姿飘逸道袍下摆 -->
+      <path d="M39 54 L31 86 Q48 91 65 86 L57 54 Z" fill="${s.robe}" stroke="${s.trim}" stroke-width="1.5"/>
+      <!-- 飘带衣袂 -->
+      <path d="M48 56 Q44 72 41 87" fill="none" stroke="${s.trim}" stroke-width="1.6" opacity="0.85"/>
+      <!-- 上身交领道袍 -->
+      <path d="M38 35 Q48 32 58 35 L57 55 L39 55 Z" fill="${s.robe}" stroke="${s.trim}" stroke-width="1.5"/>
+      <path d="M43 35 L48 45 L53 35" fill="none" stroke="${s.trim}" stroke-width="1.8" stroke-linecap="round"/>
+      <!-- 玉带束腰 -->
+      <rect x="38.5" y="52" width="19" height="3.5" rx="1.5" fill="${s.trim}"/>
+      <!-- 剑招双臂、灵剑与剑气 -->
+      ${armsAndWeapon}
+      <!-- 发髻、披发与俊朗面容 -->
+      <path d="M38 25 Q35 35 37 42" fill="none" stroke="${s.hair}" stroke-width="3" stroke-linecap="round"/>
+      <path d="M58 25 Q61 35 59 42" fill="none" stroke="${s.hair}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="48" cy="13" r="4.5" fill="${s.hair}"/>
+      <circle cx="48" cy="24" r="8.8" fill="${s.skin}"/>
+      <path d="M39.5 23 Q42 15 48 15 Q54 15 56.5 23 Q52 19 48 19 Q44 19 39.5 23 Z" fill="${s.hair}"/>
+      <!-- 凌厉剑眉星目 -->
+      <line x1="43" y1="23" x2="46.5" y2="23.5" stroke="#1e293b" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="53" y1="23" x2="49.5" y2="23.5" stroke="#1e293b" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="44.8" cy="25.5" r="1.1" fill="#0f172a"/>
+      <circle cx="51.2" cy="25.5" r="1.1" fill="#0f172a"/>
+      ${immortalScarf}
+      ${crownSvg}
+      ${subStageFx}
+    </svg>
+  `;
 }
 
 // 破境 / 飞升全屏特效动画
 let btOverlayTimer = null;
-function showBreakthroughAnimation({ type = 'minor', kicker, icon, title, subtitle, rewards = [] }) {
+function showBreakthroughAnimation({ type = 'minor', kicker, icon, customSvg = null, title, subtitle, rewards = [] }) {
   const overlay = document.getElementById('breakthrough-overlay');
   const flash = document.getElementById('bt-flash');
   const particles = document.getElementById('bt-particles');
   const card = document.getElementById('bt-card');
 
   document.getElementById('bt-kicker').textContent = kicker;
-  document.getElementById('bt-icon').textContent = icon;
+  const iconEl = document.getElementById('bt-icon');
+  if (customSvg) {
+    iconEl.innerHTML = `<div class="flex justify-center">${customSvg}</div>`;
+  } else {
+    iconEl.textContent = icon;
+  }
   document.getElementById('bt-title').textContent = title;
   document.getElementById('bt-subtitle').textContent = subtitle;
   document.getElementById('bt-rewards').innerHTML = rewards.map(r =>
@@ -155,6 +658,350 @@ document.getElementById('breakthrough-overlay')?.addEventListener('click', () =>
   document.getElementById('breakthrough-overlay').classList.add('hidden');
 });
 
+
+// ==================== 9 大逆天体质专属异象 SVG 与炫酷全屏觉醒动画 ====================
+function getPhysiqueAwakeningSVG(phId) {
+  if (phId === 'ph_heart') {
+    // 1. 七窍玲珑心：七彩晶钻之心 + 七道折射仙光
+    return `
+      <svg viewBox="0 0 200 200" width="175" height="175" class="overflow-visible">
+        <g class="pa-spin-med" opacity="0.75">
+          <circle cx="100" cy="100" r="82" fill="none" stroke="#67e8f9" stroke-width="2" stroke-dasharray="6 6"/>
+          <polygon points="100,12 115,44 100,36 85,44" fill="#67e8f9"/>
+          <polygon points="100,188 115,156 100,164 85,156" fill="#38bdf8"/>
+          <polygon points="12,100 44,85 36,100 44,115" fill="#a5f3fc"/>
+          <polygon points="188,100 156,85 164,100 156,115" fill="#f0abfc"/>
+        </g>
+        <g class="pa-spin-rev" opacity="0.85">
+          <circle cx="100" cy="24" r="5" fill="#fde047"/><circle cx="164" cy="56" r="4.5" fill="#67e8f9"/>
+          <circle cx="174" cy="126" r="4.5" fill="#f0abfc"/><circle cx="132" cy="176" r="4.5" fill="#34d399"/>
+          <circle cx="68" cy="176" r="4.5" fill="#38bdf8"/><circle cx="26" cy="126" r="4.5" fill="#fde047"/>
+          <circle cx="36" cy="56" r="4.5" fill="#a5f3fc"/>
+        </g>
+        <path d="M100,152 C55,120 42,84 62,62 C76,47 94,54 100,68 C106,54 124,47 138,62 C158,84 145,120 100,152 Z"
+              fill="url(#heartGrad)" stroke="#ffffff" stroke-width="2.5" class="palace-glow"/>
+        <polygon points="100,68 122,90 100,136 78,90" fill="#ffffff" opacity="0.45"/>
+        <defs>
+          <linearGradient id="heartGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#67e8f9"/><stop offset="50%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#e879f9"/>
+          </linearGradient>
+        </defs>
+      </svg>`;
+  }
+  if (phId === 'ph_blood') {
+    // 2. 血域魔体：猩红血月蚀 + 魔纹法阵 + 血煞剑斩
+    return `
+      <svg viewBox="0 0 200 200" width="175" height="175" class="overflow-visible">
+        <g class="pa-spin-fast" opacity="0.85">
+          <circle cx="100" cy="100" r="86" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-dasharray="14 6"/>
+          <polygon points="100,16 172,142 28,142" fill="none" stroke="#fb7185" stroke-width="2"/>
+          <polygon points="100,184 172,58 28,58" fill="none" stroke="#e11d48" stroke-width="2"/>
+        </g>
+        <circle cx="100" cy="100" r="48" fill="#9f1239" stroke="#fb7185" stroke-width="3" class="palace-glow"/>
+        <circle cx="116" cy="92" r="38" fill="#090c15"/>
+        <path d="M24,154 Q100,90 178,42" fill="none" stroke="#fda4af" stroke-width="5" stroke-linecap="round"/>
+        <path d="M36,44 Q100,104 166,162" fill="none" stroke="#f43f5e" stroke-width="4" stroke-linecap="round"/>
+      </svg>`;
+  }
+  if (phId === 'ph_bone') {
+    // 3. 至尊骨：璀璨黄金神骨 + 太古符文雷霆
+    return `
+      <svg viewBox="0 0 200 200" width="175" height="175" class="overflow-visible">
+        <g class="pa-spin-med" opacity="0.85">
+          <circle cx="100" cy="100" r="82" fill="none" stroke="#fde047" stroke-width="2.5" stroke-dasharray="10 5"/>
+          <circle cx="100" cy="100" r="64" fill="none" stroke="#f59e0b" stroke-width="2"/>
+        </g>
+        <polyline points="26,42 58,72 46,84 82,110" fill="none" stroke="#fef08a" stroke-width="3.5" stroke-linecap="round"/>
+        <polyline points="174,40 142,70 154,82 118,110" fill="none" stroke="#fef08a" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- 至尊神骨核心 -->
+        <path d="M78,46 C64,46 58,64 72,74 L76,126 C62,136 68,154 82,154 C92,154 96,144 100,140 C104,144 108,154 118,154 C132,154 138,136 124,126 L128,74 C142,64 136,46 122,46 C112,46 106,56 100,60 C94,56 88,46 78,46 Z"
+              fill="url(#boneGrad)" stroke="#ffffff" stroke-width="2.5" class="palace-glow"/>
+        <path d="M100,72 L108,100 L100,128 L92,100 Z" fill="#ffffff"/>
+        <defs>
+          <linearGradient id="boneGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="#fde047"/><stop offset="100%" stop-color="#d97706"/>
+          </linearGradient>
+        </defs>
+      </svg>`;
+  }
+  if (phId === 'ph_eye') {
+    // 4. 重瞳：巨型无敌重瞳开眼 + 紫金瞳环
+    return `
+      <svg viewBox="0 0 200 200" width="180" height="180" class="overflow-visible">
+        <g class="pa-spin-med" opacity="0.75">
+          <circle cx="100" cy="100" r="88" fill="none" stroke="#c084fc" stroke-width="2" stroke-dasharray="12 6"/>
+          <circle cx="100" cy="100" r="74" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4 6"/>
+        </g>
+        <g class="pa-eye-open">
+          <path d="M16,100 Q100,26 184,100 Q100,174 16,100 Z" fill="#1e1b4b" stroke="#fde047" stroke-width="3.5"/>
+          <circle cx="100" cy="100" r="38" fill="url(#eyeIris)" stroke="#ffffff" stroke-width="2"/>
+          <!-- 重瞳双核 -->
+          <circle cx="88" cy="100" r="14" fill="#090c15" stroke="#fde047" stroke-width="2.5"/>
+          <circle cx="112" cy="100" r="14" fill="#090c15" stroke="#c084fc" stroke-width="2.5"/>
+          <circle cx="84" cy="95" r="3.5" fill="#ffffff"/>
+          <circle cx="116" cy="95" r="3.5" fill="#ffffff"/>
+        </g>
+        <defs>
+          <radialGradient id="eyeIris" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fde047"/><stop offset="65%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#312e81"/>
+          </radialGradient>
+        </defs>
+      </svg>`;
+  }
+  if (phId === 'ph_dao') {
+    // 5. 先天道胎：太极阴阳旋转 + 八卦仙环
+    return `
+      <svg viewBox="0 0 200 200" width="180" height="180" class="overflow-visible">
+        <g class="pa-spin-rev" opacity="0.85">
+          <circle cx="100" cy="100" r="86" fill="none" stroke="#5eead4" stroke-width="2.5" stroke-dasharray="16 8"/>
+          <circle cx="100" cy="100" r="72" fill="none" stroke="#fde047" stroke-width="2" stroke-dasharray="8 8"/>
+        </g>
+        <g class="pa-spin-med">
+          <circle cx="100" cy="100" r="54" fill="#0f172a" stroke="#5eead4" stroke-width="3"/>
+          <path d="M100,46 A54,54 0 0,1 100,154 A27,27 0 0,1 100,100 A27,27 0 0,0 100,46 Z" fill="#f8fafc"/>
+          <circle cx="100" cy="73" r="8" fill="#0f172a"/>
+          <circle cx="100" cy="127" r="8" fill="#fde047"/>
+        </g>
+      </svg>`;
+  }
+  if (phId === 'ph_ancient') {
+    // 6. 荒古圣体：黄金气血冲天 + 崩断太古锁链
+    return `
+      <svg viewBox="0 0 200 200" width="185" height="185" class="overflow-visible">
+        <g class="pa-spin-med" opacity="0.9">
+          <circle cx="100" cy="100" r="84" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="14 6"/>
+          <circle cx="100" cy="100" r="66" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="6 6"/>
+        </g>
+        <!-- 崩碎锁链 -->
+        <line x1="22" y1="36" x2="72" y2="82" stroke="#94a3b8" stroke-width="5" stroke-dasharray="8 4" stroke-linecap="round"/>
+        <line x1="178" y1="36" x2="128" y2="82" stroke="#94a3b8" stroke-width="5" stroke-dasharray="8 4" stroke-linecap="round"/>
+        <line x1="26" y1="168" x2="74" y2="120" stroke="#94a3b8" stroke-width="5" stroke-dasharray="8 4" stroke-linecap="round"/>
+        <line x1="174" y1="168" x2="126" y2="120" stroke="#94a3b8" stroke-width="5" stroke-dasharray="8 4" stroke-linecap="round"/>
+        <!-- 黄金气血圣徽 -->
+        <polygon points="100,24 128,82 178,100 128,118 100,176 72,118 22,100 72,82" fill="url(#ancGrad)" stroke="#ffffff" stroke-width="2.5" class="palace-glow"/>
+        <circle cx="100" cy="100" r="22" fill="#ffffff"/>
+        <defs>
+          <radialGradient id="ancGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#fde047"/><stop offset="100%" stop-color="#dc2626"/>
+          </radialGradient>
+        </defs>
+      </svg>`;
+  }
+  if (phId === 'ph_eternal') {
+    // 7. 【重磅】永恒仙体：十二瓣盛放金玉仙莲 + 永恒∞星环 + 璀璨仙辉
+    return `
+      <svg viewBox="0 0 200 200" width="205" height="205" class="overflow-visible">
+        <defs>
+          <radialGradient id="etGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#fde047"/><stop offset="75%" stop-color="#2dd4bf" stop-opacity="0.5"/><stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="100" cy="100" r="95" fill="url(#etGlow)"/>
+        <g class="pa-spin-med">
+          <circle cx="100" cy="100" r="90" fill="none" stroke="#fde047" stroke-width="2.6" stroke-dasharray="14 6 4 6"/>
+          <circle cx="100" cy="100" r="76" fill="none" stroke="#5eead4" stroke-width="2" stroke-dasharray="8 5"/>
+        </g>
+        <!-- 十二瓣盛放永恒仙莲 -->
+        <g class="pa-lotus-bloom">
+          ${[0,30,60,90,120,150,180,210,240,270,300,330].map(deg => `
+            <path d="M100,100 Q114,52 100,24 Q86,52 100,100 Z"
+                  transform="rotate(${deg} 100 100)"
+                  fill="${deg % 60 === 0 ? '#fde047' : '#5eead4'}" fill-opacity="0.82" stroke="#ffffff" stroke-width="1.2"/>
+          `).join('')}
+        </g>
+        <!-- 永恒无穷大符文 ∞ -->
+        <path d="M68,100 C68,84 88,84 100,100 C112,116 132,116 132,100 C132,84 112,84 100,100 C88,116 68,116 68,100 Z"
+              fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" class="palace-glow"/>
+      </svg>`;
+  }
+  if (phId === 'ph_chaos') {
+    // 8. 【重磅】混沌神体：吞噬星河的混沌漩涡黑洞 + 紫青虚空神雷 + 混沌双环
+    return `
+      <svg viewBox="0 0 200 200" width="210" height="210" class="overflow-visible">
+        <defs>
+          <radialGradient id="chaosCore" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#09090b"/><stop offset="45%" stop-color="#3b0764"/><stop offset="72%" stop-color="#c084fc"/><stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="100" cy="100" r="96" fill="url(#chaosCore)"/>
+        <!-- 混沌星云螺旋臂 -->
+        <g class="pa-spin-fast">
+          <path d="M100,100 C135,55 178,75 182,118" fill="none" stroke="#e879f9" stroke-width="4.5" stroke-linecap="round"/>
+          <path d="M100,100 C65,145 22,125 18,82" fill="none" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round"/>
+          <path d="M100,100 C55,65 75,22 118,18" fill="none" stroke="#fde047" stroke-width="4" stroke-linecap="round"/>
+          <path d="M100,100 C145,135 125,178 82,182" fill="none" stroke="#a855f7" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="100" cy="100" r="84" fill="none" stroke="#f0abfc" stroke-width="2.4" stroke-dasharray="18 8 4 8"/>
+        </g>
+        <g class="pa-spin-rev">
+          <circle cx="100" cy="100" r="64" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="10 6"/>
+          <polygon points="100,26 164,136 36,136" fill="none" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>
+        </g>
+        <!-- 虚空混沌闪电 -->
+        <polyline points="12,56 46,74 36,88 74,98" fill="none" stroke="#ffffff" stroke-width="3"/>
+        <polyline points="188,144 154,126 164,112 126,102" fill="none" stroke="#ffffff" stroke-width="3"/>
+        <!-- 混沌奇点 -->
+        <circle cx="100" cy="100" r="28" fill="#09090b" stroke="#ffffff" stroke-width="3.5" class="palace-glow"/>
+        <circle cx="100" cy="100" r="14" fill="none" stroke="#fde047" stroke-width="2.5" stroke-dasharray="4 3"/>
+      </svg>`;
+  }
+  // 9. 【终极史诗】鸿蒙至尊体：鸿蒙紫气贯日 + 三重造化神轮 + 无上至尊帝冠 + 星海奇点
+  return `
+    <svg viewBox="0 0 200 200" width="220" height="220" class="overflow-visible">
+      <defs>
+        <radialGradient id="hmGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="30%" stop-color="#fde047"/><stop offset="62%" stop-color="#d946ef" stop-opacity="0.85"/><stop offset="100%" stop-color="#3b0764" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="hmCrown" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#fde047"/><stop offset="100%" stop-color="#f59e0b"/>
+        </linearGradient>
+      </defs>
+      <circle cx="100" cy="100" r="98" fill="url(#hmGlow)"/>
+      <!-- 三重旋转鸿蒙造化天轮 -->
+      <g class="pa-spin-med">
+        <circle cx="100" cy="100" r="92" fill="none" stroke="#fde047" stroke-width="3" stroke-dasharray="16 6 4 6"/>
+        <circle cx="100" cy="8" r="6" fill="#fde047"/><circle cx="192" cy="100" r="6" fill="#f0abfc"/>
+        <circle cx="100" cy="192" r="6" fill="#38bdf8"/><circle cx="8" cy="100" r="6" fill="#fde047"/>
+      </g>
+      <g class="pa-spin-rev">
+        <circle cx="100" cy="100" r="76" fill="none" stroke="#f0abfc" stroke-width="2.8" stroke-dasharray="10 5"/>
+        <polygon points="100,18 122,78 182,100 122,122 100,182 78,122 18,100 78,78" fill="none" stroke="#fef08a" stroke-width="2.2"/>
+      </g>
+      <g class="pa-spin-fast">
+        <circle cx="100" cy="100" r="56" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-dasharray="6 6"/>
+      </g>
+      <!-- 无上鸿蒙帝冠 -->
+      <g class="palace-glow">
+        <polygon points="56,124 66,68 86,96 100,52 114,96 134,68 144,124" fill="url(#hmCrown)" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>
+        <rect x="54" y="124" width="92" height="14" rx="5" fill="#7e22ce" stroke="#fde047" stroke-width="2.5"/>
+        <circle cx="100" cy="46" r="7" fill="#ffffff"/>
+        <circle cx="66" cy="63" r="4.5" fill="#f0abfc"/>
+        <circle cx="134" cy="63" r="4.5" fill="#38bdf8"/>
+        <circle cx="100" cy="131" r="4" fill="#fde047"/>
+      </g>
+    </svg>`;
+}
+
+let paOverlayTimer = null;
+function showPhysiqueAwakeningAnimation(ph, isReplay = false) {
+  const overlay = document.getElementById('physique-awakening-overlay');
+  if (!overlay) return;
+
+  const isTop3 = ['ph_eternal', 'ph_chaos', 'ph_hongmeng'].includes(ph.id);
+  const isHongmeng = ph.id === 'ph_hongmeng';
+
+  const themes = {
+    ph_heart:    { bg: 'radial-gradient(circle, rgba(34,211,238,0.45), rgba(14,116,144,0.2), #050a14 75%)', card: 'border-cyan-400/75 from-cyan-950/95 via-xian-900/95 to-xian-950/95 shadow-[0_0_65px_rgba(34,211,238,0.55)]', tierCls: 'bg-cyan-500/20 border-cyan-300/60 text-cyan-200', palette: ['#67e8f9','#38bdf8','#f0abfc','#ffffff'], beams: 6, shocks: 2, pCount: 48 },
+    ph_blood:    { bg: 'radial-gradient(circle, rgba(244,63,94,0.5), rgba(136,19,55,0.28), #0a0408 75%)',  card: 'border-rose-500/80 from-rose-950/95 via-xian-900/95 to-black/95 shadow-[0_0_70px_rgba(244,63,94,0.6)]',   tierCls: 'bg-rose-500/20 border-rose-400/60 text-rose-200', palette: ['#fb7185','#f43f5e','#fda4af','#fde047'], beams: 8, shocks: 2, pCount: 54 },
+    ph_bone:     { bg: 'radial-gradient(circle, rgba(251,191,36,0.5), rgba(180,83,9,0.25), #0c0905 75%)',  card: 'border-amber-400/80 from-amber-950/95 via-xian-900/95 to-xian-950/95 shadow-[0_0_70px_rgba(251,191,36,0.6)]', tierCls: 'bg-amber-500/20 border-amber-300/60 text-amber-200', palette: ['#fde047','#f59e0b','#ffffff','#fef08a'], beams: 8, shocks: 2, pCount: 54 },
+    ph_eye:      { bg: 'radial-gradient(circle, rgba(168,85,247,0.52), rgba(76,29,149,0.28), #090614 75%)',card: 'border-purple-400/80 from-purple-950/95 via-xian-900/95 to-xian-950/95 shadow-[0_0_75px_rgba(168,85,247,0.6)]', tierCls: 'bg-purple-500/20 border-purple-300/60 text-purple-200', palette: ['#c084fc','#fde047','#e879f9','#ffffff'], beams: 8, shocks: 2, pCount: 58 },
+    ph_dao:      { bg: 'radial-gradient(circle, rgba(45,212,191,0.48), rgba(15,118,110,0.25), #060e14 75%)',card: 'border-teal-300/80 from-teal-950/95 via-xian-900/95 to-xian-950/95 shadow-[0_0_75px_rgba(45,212,191,0.6)]', tierCls: 'bg-teal-500/20 border-teal-300/60 text-teal-200', palette: ['#5eead4','#fde047','#ffffff','#38bdf8'], beams: 10, shocks: 2, pCount: 60 },
+    ph_ancient:  { bg: 'radial-gradient(circle, rgba(245,158,11,0.55), rgba(185,28,28,0.3), #0e0604 75%)', card: 'border-amber-400/85 from-amber-950/95 via-red-950/90 to-black/95 shadow-[0_0_80px_rgba(245,158,11,0.65)]', tierCls: 'bg-amber-500/25 border-amber-300/70 text-amber-200', palette: ['#fde047','#f59e0b','#ef4444','#ffffff'], beams: 10, shocks: 3, pCount: 66 },
+    // 最后三大至高体质：满屏华丽光柱、三重震荡波、海量星辉粒子、震屏效果
+    ph_eternal:  { bg: 'radial-gradient(circle, rgba(254,240,138,0.62), rgba(45,212,191,0.38), #071422 76%)', card: 'border-amber-300/90 from-teal-950/95 via-amber-950/85 to-xian-950/95 shadow-[0_0_95px_rgba(253,224,71,0.75)]', tierCls: 'bg-amber-400/25 border-amber-200 text-amber-100', palette: ['#fde047','#5eead4','#ffffff','#fef08a','#34d399'], beams: 14, shocks: 3, pCount: 82 },
+    ph_chaos:    { bg: 'radial-gradient(circle, rgba(192,132,252,0.65), rgba(56,189,248,0.35), #060312 76%)', card: 'border-fuchsia-400/90 from-purple-950/95 via-indigo-950/90 to-black/95 shadow-[0_0_105px_rgba(217,70,239,0.8)]', tierCls: 'bg-fuchsia-500/25 border-fuchsia-300 text-fuchsia-100', palette: ['#e879f9','#38bdf8','#fde047','#a855f7','#ffffff'], beams: 16, shocks: 3, pCount: 92 },
+    ph_hongmeng: { bg: 'radial-gradient(circle, rgba(253,224,71,0.72), rgba(217,70,239,0.52), rgba(59,7,100,0.45) 55%, #070210 82%)', card: 'border-amber-200 from-fuchsia-950/95 via-amber-950/90 to-indigo-950/95 shadow-[0_0_130px_rgba(253,224,71,0.9)]', tierCls: 'bg-gradient-to-r from-amber-400/35 to-fuchsia-500/35 border-amber-200 text-amber-100', palette: ['#fde047','#f0abfc','#ffffff','#38bdf8','#f59e0b','#e879f9'], beams: 20, shocks: 4, pCount: 115 }
+  };
+  const cfg = themes[ph.id] || themes.ph_eternal;
+
+  document.getElementById('pa-aurora').style.background = cfg.bg;
+  const flash = document.getElementById('pa-flash');
+  flash.style.background = isHongmeng
+    ? 'radial-gradient(circle, #ffffff, rgba(253,224,71,0.95), rgba(217,70,239,0.65), transparent 76%)'
+    : `radial-gradient(circle, #ffffff, ${cfg.palette[0]}, transparent 72%)`;
+
+  const card = document.getElementById('pa-card');
+  card.className = `relative z-10 max-w-lg w-full text-center space-y-3 px-6 py-7 rounded-3xl border bg-gradient-to-b ${cfg.card}`;
+
+  const tierEl = document.getElementById('pa-tier');
+  tierEl.className = `inline-block px-3.5 py-1 rounded-full text-[11px] font-black tracking-[0.26em] uppercase border ${cfg.tierCls}`;
+  tierEl.textContent = `${ph.tierTag || '逆天圣体'} · ${isReplay ? '异象重现' : '脱胎换骨'}`;
+
+  document.getElementById('pa-emblem').innerHTML = getPhysiqueAwakeningSVG(ph.id);
+  document.getElementById('pa-title').textContent = `${ph.icon} ${ph.name}`;
+  document.getElementById('pa-subtitle').textContent = ph.desc;
+
+  const rewards = [
+    `解锁至高神诀《${ph.art.name}》`,
+    `+${Math.round(ph.stoneBonus * 100)}% 灵石`,
+    `+${Math.round(ph.jadeBonus * 100)}% 仙玉`,
+    `+${Math.round(ph.karmaBonus * 100)}% 道果`,
+    `+${Math.round(ph.qiBonus * 100)}% 修为`
+  ];
+  document.getElementById('pa-rewards').innerHTML = rewards.map(r =>
+    `<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-black/50 border border-amber-300/50 text-amber-100">${r}</span>`
+  ).join('');
+
+  // 生成满屏放射光柱
+  const beamsWrap = document.getElementById('pa-beams');
+  beamsWrap.innerHTML = '';
+  for (let i = 0; i < cfg.beams; i++) {
+    const b = document.createElement('div');
+    b.className = 'pa-beam';
+    const ang = (180 / cfg.beams) * i;
+    const col = cfg.palette[i % cfg.palette.length];
+    b.style.setProperty('--ang', `${ang}deg`);
+    b.style.setProperty('--bw', `${isTop3 ? 28 : 18}px`);
+    b.style.background = `linear-gradient(180deg, transparent 0%, ${col}33 30%, ${col}88 50%, ${col}33 70%, transparent 100%)`;
+    b.style.animationDelay = `${(i % 4) * 0.25}s`;
+    beamsWrap.appendChild(b);
+  }
+
+  // 生成多层扩散冲击波
+  const shocksWrap = document.getElementById('pa-shockwaves');
+  shocksWrap.innerHTML = '';
+  for (let i = 0; i < cfg.shocks; i++) {
+    const sh = document.createElement('div');
+    sh.className = 'pa-shock-ring';
+    sh.style.borderColor = cfg.palette[i % cfg.palette.length];
+    sh.style.boxShadow = `0 0 32px ${cfg.palette[i % cfg.palette.length]}`;
+    sh.style.setProperty('--dur', `${1.15 + i * 0.35}s`);
+    sh.style.setProperty('--delay', `${i * 0.22}s`);
+    shocksWrap.appendChild(sh);
+  }
+
+  // 生成星辉粒子喷发
+  const pWrap = document.getElementById('pa-particles');
+  pWrap.innerHTML = '';
+  for (let i = 0; i < cfg.pCount; i++) {
+    const p = document.createElement('span');
+    p.className = 'pa-particle';
+    const angle = (Math.PI * 2 * i) / cfg.pCount + (Math.random() - 0.5) * 0.35;
+    const dist = 140 + Math.random() * (isTop3 ? 420 : 280);
+    const size = (isTop3 ? 5 : 4) + Math.random() * (isHongmeng ? 8 : 6);
+    const col = cfg.palette[i % cfg.palette.length];
+    p.style.width = `${size}px`;
+    p.style.height = `${size}px`;
+    p.style.background = col;
+    p.style.boxShadow = `0 0 ${size * 2.2}px ${col}`;
+    p.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+    p.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+    p.style.setProperty('--dur', `${1.0 + Math.random() * 1.1}s`);
+    p.style.setProperty('--delay', `${Math.random() * 0.35}s`);
+    pWrap.appendChild(p);
+  }
+
+  overlay.classList.remove('hidden', 'pa-active', 'pa-shake');
+  flash.classList.remove('bt-anim-flash');
+  void overlay.offsetWidth;
+  overlay.classList.add('pa-active');
+  if (isTop3 || ph.id === 'ph_ancient' || ph.id === 'ph_blood') {
+    overlay.classList.add('pa-shake');
+  }
+  flash.classList.add('bt-anim-flash');
+
+  if (typeof playPhysiqueSound === 'function') playPhysiqueSound(ph.id);
+
+  clearTimeout(paOverlayTimer);
+  paOverlayTimer = setTimeout(() => {
+    overlay.classList.add('hidden');
+  }, isHongmeng ? 5200 : isTop3 ? 4500 : 3600);
+}
+
+document.getElementById('physique-awakening-overlay')?.addEventListener('click', () => {
+  clearTimeout(paOverlayTimer);
+  document.getElementById('physique-awakening-overlay').classList.add('hidden');
+});
+
 function flushHUD() {
   hudDirty = false;
   const r = getRealm();
@@ -204,6 +1051,19 @@ function flushHUD() {
     DOM.btTopBtn.className = 'px-3.5 sm:px-5 py-2 rounded-xl font-black text-xs sm:text-sm tracking-wide transition shrink-0 disabled:opacity-40 disabled:cursor-not-allowed bg-xian-850 border border-slate-700 text-slate-400';
     DOM.dockBreakBtn.className = 'col-span-5 min-h-[48px] py-2 px-2 rounded-2xl bg-xian-850 border border-slate-700 text-slate-400 font-extrabold text-xs flex items-center justify-center gap-1 disabled:opacity-45';
   }
+
+  const avatarKey = `${state.realmIdx}:${state.subIdx}`;
+  if (textCache.avatarKey !== avatarKey && DOM.sprite) {
+    textCache.avatarKey = avatarKey;
+    DOM.sprite.innerHTML = getCultivatorAvatarSVG(state.realmIdx, 94, state.subIdx);
+  }
+
+  const sceneryKey = state.realmIdx >= 17 ? 'supreme' : (state.ascended || state.realmIdx >= 9 ? 'immortal' : state.realmIdx >= 4 ? 'mortal_high' : 'mortal_low');
+  if (textCache.sceneryKey !== sceneryKey && DOM.sceneryLayer) {
+    textCache.sceneryKey = sceneryKey;
+    DOM.sceneryLayer.innerHTML = getStageScenerySVG(state.realmIdx, state.ascended);
+  }
+  updateRealmTheme();
 
   if (textCache.worldId !== w.id) {
     textCache.worldId = w.id;
@@ -468,6 +1328,12 @@ function renderArtsTab(container) {
       }
     };
   });
+  container.querySelectorAll('[data-replay-ph]').forEach(btn => {
+    btn.onclick = () => {
+      const ph = PHYSIQUES.find(x => x.id === btn.dataset.replayPh);
+      if (ph) showPhysiqueAwakeningAnimation(ph, true);
+    };
+  });
 }
 
 function renderTreasuresTab(container) {
@@ -533,8 +1399,8 @@ function renderTreasuresTab(container) {
           <p class="text-xs text-slate-400 mt-1">${p.desc}</p>
         </div>
         <div class="grid grid-cols-3 gap-1.5">
-          <button data-pill-buy="${p.id}:20" ${state.stones < p.cost * 20 ? 'disabled' : ''} class="py-1.5 rounded-lg text-[11px] font-bold bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 text-white">+20 (${fmt(p.cost * 20)})</button>
-          <button data-pill-buy="${p.id}:100" ${state.stones < p.cost * 100 ? 'disabled' : ''} class="py-1.5 rounded-lg text-[11px] font-bold bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 text-white">+100 (${fmt(p.cost * 100)})</button>
+          <button data-pill-buy="${p.id}:5" ${state.stones < p.cost * 5 ? 'disabled' : ''} class="py-1.5 rounded-lg text-[11px] font-bold bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 text-white">+5 (${fmt(p.cost * 5)})</button>
+          <button data-pill-buy="${p.id}:25" ${state.stones < p.cost * 25 ? 'disabled' : ''} class="py-1.5 rounded-lg text-[11px] font-bold bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 text-white">+25 (${fmt(p.cost * 25)})</button>
           <button data-pill-eq="${p.id}" ${qty <= 0 ? 'disabled' : ''} class="py-1.5 rounded-lg text-[11px] font-bold ${eq ? 'bg-amber-400 text-slate-950' : 'bg-emerald-600 hover:bg-emerald-500 text-white'} disabled:bg-xian-950 disabled:text-slate-500">${eq ? '服用中' : '服用'}</button>
         </div>
       </div>
@@ -730,16 +1596,38 @@ function renderPhysiquesTab(container) {
   }
 
   const mult = getPhysiqueCostMultiplier();
-  const cards = PHYSIQUES.map(ph => {
+  const baseCount = getUnlockedBasePhysiqueCount();
+
+  const buildCard = (ph) => {
     const owned = state.physiques.includes(ph.id);
+    const lockReason = getPhysiqueLockReason(ph);
+    const isLocked = Boolean(lockReason);
     const cost = getPhysiqueActualCost(ph);
-    const canBuy = !owned && state.karma >= cost.karma && state.jade >= cost.jade;
+    const canBuy = !owned && !isLocked && state.karma >= cost.karma && state.jade >= cost.jade;
+    const isSup = Boolean(ph.isSupreme);
+
+    const cardBorder = owned
+      ? 'bg-fuchsia-500/15 border-fuchsia-400/60'
+      : isLocked
+        ? 'bg-xian-950/90 border-dashed border-slate-700/90 opacity-80'
+        : isSup
+          ? 'bg-gradient-to-br from-amber-950/40 via-fuchsia-950/40 to-xian-850 border-amber-400/60 shadow-[0_0_24px_rgba(251,191,36,0.18)]'
+          : 'bg-xian-850 border-slate-800';
+
+    const statusBadge = owned
+      ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/25 text-emerald-300">已觉醒</span>'
+      : isLocked
+        ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-800 text-slate-400">🔒 未解封</span>'
+        : isSup
+          ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-400/25 text-amber-200">✨ 已解封</span>'
+          : '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-xian-950 text-fuchsia-300">可洗髓</span>';
+
     return `
-      <div class="p-3.5 rounded-xl border ${owned ? 'bg-fuchsia-500/15 border-fuchsia-400/60' : 'bg-xian-850 border-slate-800'} flex flex-col justify-between gap-3">
+      <div class="p-3.5 rounded-xl border ${cardBorder} flex flex-col justify-between gap-3">
         <div>
           <div class="flex items-center justify-between gap-2">
-            <span class="font-black text-sm text-white">${ph.icon} ${ph.name}</span>
-            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${owned ? 'bg-emerald-500/25 text-emerald-300' : 'bg-xian-950 text-fuchsia-300'}">${owned ? '已觉醒' : '可洗髓'}</span>
+            <span class="font-black text-sm ${isSup ? 'text-amber-200' : 'text-white'}">${ph.icon} ${ph.name}</span>
+            ${statusBadge}
           </div>
           <p class="text-xs text-slate-400 mt-1 leading-relaxed">${ph.desc}</p>
           <div class="flex flex-wrap gap-1.5 mt-2 text-[10px] font-mono">
@@ -750,26 +1638,58 @@ function renderPhysiquesTab(container) {
           </div>
           <div class="text-[11px] text-amber-200/90 mt-2">✨ 解锁专属神诀：<strong>《${ph.art.name}》</strong></div>
         </div>
-        <button data-buy-ph="${ph.id}" ${owned || !canBuy ? 'disabled' : ''} class="w-full py-2 px-3 rounded-xl font-extrabold text-xs transition active:scale-95 ${
-          owned ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 cursor-default'
-          : 'bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:brightness-110 disabled:bg-xian-950 disabled:from-xian-950 disabled:to-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800 text-white'
-        }">${owned ? '已觉醒（永久生效）' : `觉醒 — ${fmt(cost.karma)} 🍑 + ${fmt(cost.jade)} 💎`}</button>
+        ${owned ? `
+          <div class="grid grid-cols-12 gap-1.5">
+            <div class="col-span-7 py-2 px-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 text-center font-extrabold text-xs">已觉醒生效</div>
+            <button data-replay-ph="${ph.id}" class="col-span-5 py-2 px-2 rounded-xl bg-fuchsia-500/25 hover:bg-fuchsia-500/40 border border-fuchsia-400/50 text-fuchsia-200 font-extrabold text-xs transition active:scale-95">✨ 重温异象</button>
+          </div>
+        ` : isLocked ? `
+          <button disabled class="w-full py-2 px-3 rounded-xl font-bold text-[11px] bg-xian-950 text-slate-400 border border-slate-800 cursor-not-allowed">
+            🔒 ${lockReason}
+          </button>
+        ` : `
+          <button data-buy-ph="${ph.id}" ${!canBuy ? 'disabled' : ''} class="w-full py-2 px-3 rounded-xl font-extrabold text-xs transition active:scale-95 ${
+            isSup
+              ? 'bg-gradient-to-r from-amber-400 via-fuchsia-500 to-indigo-500 text-slate-950 hover:brightness-110 disabled:bg-xian-950 disabled:from-xian-950 disabled:via-xian-950 disabled:to-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800'
+              : 'bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:brightness-110 disabled:bg-xian-950 disabled:from-xian-950 disabled:to-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800 text-white'
+          }">
+            觉醒 — ${fmt(cost.karma)} 🍑 + ${fmt(cost.jade)} 💎
+          </button>
+        `}
       </div>
     `;
-  }).join('');
+  };
+
+  const basePhysiques = PHYSIQUES.filter(p => !p.isSupreme);
+  const supremePhysiques = PHYSIQUES.filter(p => p.isSupreme);
 
   container.innerHTML = `
-    <div class="space-y-4">
+    <div class="space-y-5">
       <div class="p-3.5 rounded-2xl bg-gradient-to-r from-fuchsia-500/15 via-indigo-500/15 to-amber-500/15 border border-fuchsia-400/40 space-y-1">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="font-black text-sm text-fuchsia-200">🧬 血脉排斥法则（资源暴增 · 阶梯递增）</span>
           <span class="px-2.5 py-0.5 rounded-full bg-black/40 text-xs font-mono font-bold text-amber-300">当前排斥倍率：${fmt(mult)}x (已觉醒 ${state.physiques.length}/9)</span>
         </div>
         <p class="text-xs text-slate-300 leading-relaxed">
-          每觉醒一种逆天体质，其余所有体质的道果与仙玉消耗将飙升 <strong>4 倍</strong>，请谨慎抉择觉醒顺序！觉醒后将大幅加速灵石、仙玉与道果获取，并在「📖 功法修炼」中开启专属至高神诀。
+          每觉醒一种逆天体质，其余所有体质的道果与仙玉消耗将飙升 <strong>4 倍</strong>！必须先集齐<strong>前六大基础圣体</strong>，方可按顺序逐一解封终极三大圣体：<strong>永恒仙体 → 混沌神体 → 鸿蒙至尊体</strong>。
         </p>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${cards}</div>
+
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">🧬 六大逆天圣体（可自由选择觉醒顺序）</h4>
+          <span class="text-xs font-mono font-bold ${baseCount >= 6 ? 'text-emerald-300' : 'text-amber-300'}">已集齐 ${baseCount} / 6</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${basePhysiques.map(buildCard).join('')}</div>
+      </div>
+
+      <div class="space-y-2.5 pt-3 border-t border-amber-500/25">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-amber-300">👑 三大至高终极圣体（严格按序解锁：永恒仙体 → 混沌神体 → 鸿蒙至尊体）</h4>
+          <span class="text-[11px] font-bold ${baseCount >= 6 ? 'text-emerald-300' : 'text-slate-400'}">${baseCount >= 6 ? '✅ 已满足前置六体条件' : `🔒 尚缺 ${6 - baseCount} 种基础圣体`}</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">${supremePhysiques.map(buildCard).join('')}</div>
+      </div>
     </div>
   `;
 
@@ -777,26 +1697,29 @@ function renderPhysiquesTab(container) {
     btn.onclick = () => {
       const ph = PHYSIQUES.find(x => x.id === btn.dataset.buyPh);
       if (!ph || state.physiques.includes(ph.id)) return;
+      const lockReason = getPhysiqueLockReason(ph);
+      if (lockReason) {
+        showToast(`🔒 ${lockReason}`, 'amber');
+        return;
+      }
       const cost = getPhysiqueActualCost(ph);
       if (state.karma >= cost.karma && state.jade >= cost.jade) {
         state.karma -= cost.karma;
         state.jade -= cost.jade;
         state.physiques.push(ph.id);
-        playBreakthroughSound('major');
-        showBreakthroughAnimation({
-          type: 'major',
-          kicker: '脱胎换骨 · 圣体觉醒',
-          icon: ph.icon,
-          title: `觉醒「${ph.name}」`,
-          subtitle: ph.desc,
-          rewards: [`解锁《${ph.art.name}》`, `+${Math.round(ph.stoneBonus * 100)}% 灵石`, `+${Math.round(ph.jadeBonus * 100)}% 仙玉`]
-        });
+        showPhysiqueAwakeningAnimation(ph, false);
         addLog(`🧬 <span class="feed-fuchsia">逆天体质觉醒！</span>成功洗髓获得 <span class="feed-strong">${ph.icon} ${ph.name}</span>，解锁专属神诀 <span class="feed-amber">《${ph.art.name}》</span>！`, 'major');
         saveGame(false);
         hudDirty = true;
         flushHUD();
         renderActiveTab();
       }
+    };
+  });
+  container.querySelectorAll('[data-replay-ph]').forEach(btn => {
+    btn.onclick = () => {
+      const ph = PHYSIQUES.find(x => x.id === btn.dataset.replayPh);
+      if (ph) showPhysiqueAwakeningAnimation(ph, true);
     };
   });
 }
