@@ -6,6 +6,10 @@ function defaultState() {
   REALMS.forEach(r => { arts[r.art.id] = 0; });
   const pArts = {};
   PHYSIQUES.forEach(p => { pArts[p.art.id] = 0; });
+  const pets = {};
+  SPIRIT_PETS.forEach(p => { pets[p.id] = 0; });
+  const relics = {};
+  RELICS.forEach(r => { relics[r.id] = 0; });
   return {
     displayName: '青云散修',
     stones: 0,
@@ -27,7 +31,12 @@ function defaultState() {
     arts,
     physiques: [],      // 已觉醒逆天体质 ID 列表
     physiqueArts: pArts,
-    karmaPerks: { k_qi: 0, k_stone: 0, k_speed: 0, k_jade: 0 },
+    pets,               // 上古灵宠等级 (0 = 未契约)
+    activePet: null,    // 当前出战灵宠 ID (效果翻倍)
+    relics,             // 宝物等级 (重复获得自动升级；先天至宝最高1级)
+    luckUpgrades: { lu_compass: 0, lu_eye: 0, lu_array: 0 },
+    totalRelicsFound: 0,
+    karmaPerks: { k_qi: 0, k_stone: 0, k_speed: 0, k_jade: 0, k_luck: 0 },
     btPity: 0,          // 当前瓶颈破境感悟保底（失败累积，成功后清零）
     useJadeGuard: false,// 是否启用仙玉护道
     autoMeditate: false,
@@ -81,6 +90,11 @@ function mergeState(parsed) {
     physiques: Array.isArray(p.physiques) ? p.physiques.filter(id => PHYSIQUES.some(x => x.id === id)) : [],
     arts: sanitizeMap(p.arts, def.arts),
     physiqueArts: sanitizeMap(p.physiqueArts, def.physiqueArts),
+    pets: sanitizeMap(p.pets, def.pets),
+    activePet: (p.activePet && SPIRIT_PETS.some(x => x.id === p.activePet)) ? p.activePet : null,
+    relics: sanitizeMap(p.relics, def.relics),
+    luckUpgrades: sanitizeMap(p.luckUpgrades, def.luckUpgrades),
+    totalRelicsFound: Math.floor(safeNum(p.totalRelicsFound, 0, 0)),
     karmaPerks: sanitizeMap(p.karmaPerks, def.karmaPerks),
     btPity: safeNum(p.btPity, 0, 0),
     useJadeGuard: Boolean(p.useJadeGuard),
@@ -191,6 +205,9 @@ function getBreakthroughChance() {
     chance += (state.realmIdx >= 9 ? 0.18 : 0.25);
   }
 
+  // 上古灵宠与宝物破境加持
+  chance += getPetBonuses().bt + getRelicBonuses().btAdd;
+
   // 失败感悟保底
   chance += (state.btPity || 0);
 
@@ -219,8 +236,9 @@ function getCooldownSeconds() {
   const base = 1.80;
   const artCut = getArtifact().cdCut;
   const daoCut = state.physiques.includes('ph_dao') ? 0.20 : 0;
-  const hardFloor = Math.max(0.24, 0.60 - state.karmaPerks.k_speed * 0.06);
-  return Math.max(hardFloor, base - artCut - daoCut);
+  const extraCut = getPetBonuses().cdCut + getRelicBonuses().cdCut;
+  const hardFloor = Math.max(0.20, 0.60 - state.karmaPerks.k_speed * 0.06);
+  return Math.max(hardFloor, base - artCut - daoCut - extraCut);
 }
 
 // 4x 血脉排斥递增公式：baseCost * 4^(已觉醒体质数)
@@ -309,34 +327,115 @@ function getArtsFlatGains() {
   return { qiAdd, stoneAdd };
 }
 
+
+// 汇总所有上古灵宠加成（出战灵宠效果翻倍！）
+function getPetBonuses() {
+  let qi = 0, stone = 0, jade = 0, luck = 0, crit = 0, bt = 0, cdCut = 0;
+  for (const pet of SPIRIT_PETS) {
+    const lv = state.pets[pet.id] || 0;
+    if (lv <= 0) continue;
+    const mult = (state.activePet === pet.id) ? 2 : 1;
+    qi += lv * pet.qiPerLv * mult;
+    stone += lv * pet.stonePerLv * mult;
+    jade += lv * pet.jadePerLv * mult;
+    luck += lv * pet.luckPerLv * mult;
+    crit += (pet.critAdd || 0) * mult;
+    bt += (pet.btAdd || 0) * mult;
+    cdCut += (pet.cdCut || 0) * mult;
+  }
+  return { qi, stone, jade, luck, crit, bt, cdCut };
+}
+
+// 汇总所有已获得宝物与三大先天至宝加成
+function getRelicBonuses() {
+  let qiAdd = 0, stoneAdd = 0, jadeAdd = 0, luckAdd = 0, btAdd = 0, critAdd = 0, karmaAdd = 0, critMultAdd = 0, cdCut = 0;
+  let qiMult = 1, stoneMult = 1, jadeMult = 1;
+  for (const rel of RELICS) {
+    const lv = state.relics[rel.id] || 0;
+    if (lv <= 0) continue;
+    if (rel.unique) {
+      qiMult *= (rel.qiMult || 1);
+      stoneMult *= (rel.stoneMult || 1);
+      jadeMult *= (rel.jadeMult || 1);
+      karmaAdd += (rel.karmaAdd || 0);
+      luckAdd += (rel.luckAdd || 0);
+      btAdd += (rel.btAdd || 0);
+      critAdd += (rel.critAdd || 0);
+      critMultAdd += (rel.critMultAdd || 0);
+      cdCut += (rel.cdCut || 0);
+    } else {
+      qiAdd += lv * (rel.qiPerLv || 0);
+      stoneAdd += lv * (rel.stonePerLv || 0);
+      jadeAdd += lv * (rel.jadePerLv || 0);
+      luckAdd += lv * (rel.luckPerLv || 0);
+      btAdd += Math.min(0.12, lv * (rel.btPerLv || 0));
+      critAdd += Math.min(0.15, lv * (rel.critPerLv || 0));
+      karmaAdd += lv * (rel.karmaPerLv || 0);
+    }
+  }
+  return { qiAdd, stoneAdd, jadeAdd, luckAdd, btAdd, critAdd, karmaAdd, critMultAdd, cdCut, qiMult, stoneMult, jadeMult };
+}
+
+// 综合宝物掉落概率倍率
+function getTreasureLuckMultiplier() {
+  let upgLuck = 0;
+  for (const u of LUCK_UPGRADES) {
+    upgLuck += (state.luckUpgrades[u.id] || 0) * u.luckPerLv;
+  }
+  const pb = getPetBonuses();
+  const rb = getRelicBonuses();
+  const karmaLuck = (state.karmaPerks.k_luck || 0) * 0.25;
+  return 1 + upgLuck + pb.luck + rb.luckAdd + karmaLuck;
+}
+
+// 获取某个品阶当前的实时掉率
+function getRelicTierLiveRate(tierId) {
+  const tier = RELIC_TIERS.find(t => t.id === tierId);
+  if (!tier) return 0;
+  const luck = getTreasureLuckMultiplier();
+  if (tierId === 'supreme') {
+    // 先天至宝始终保持极低彩票级概率（受气运平方根温和增益，最高不超过 25x 倍率）
+    return tier.baseRate * Math.min(25, Math.sqrt(luck));
+  }
+  const caps = { faqi: 0.35, lingqi: 0.15, fabao: 0.05, lingbao: 0.015, xianqi: 0.003 };
+  return Math.min(caps[tierId] || 0.25, tier.baseRate * luck);
+}
+
 function getQiMultiplier() {
   const art = getArtifact();
   const pill = getActivePill();
   const pb = getPhysiqueBonuses();
-  const linearPerm = 1 + state.prestige * 0.20 + state.karmaPerks.k_qi * 0.15 + pb.qi;
+  const petB = getPetBonuses();
+  const relB = getRelicBonuses();
+  const linearPerm = 1 + state.prestige * 0.20 + state.karmaPerks.k_qi * 0.15 + pb.qi + petB.qi + relB.qiAdd;
   const ascendMult = state.ascended ? 1.50 : 1.0;
-  return art.qiMult * (pill ? pill.qiMult : 1) * linearPerm * ascendMult;
+  return art.qiMult * (pill ? pill.qiMult : 1) * linearPerm * ascendMult * relB.qiMult;
 }
 
 function getStoneMultiplier() {
   const art = getArtifact();
   const pill = getActivePill();
   const pb = getPhysiqueBonuses();
-  const linearPerm = 1 + state.prestige * 0.25 + state.karmaPerks.k_stone * 0.20 + pb.stone;
+  const petB = getPetBonuses();
+  const relB = getRelicBonuses();
+  const linearPerm = 1 + state.prestige * 0.25 + state.karmaPerks.k_stone * 0.20 + pb.stone + petB.stone + relB.stoneAdd;
   const ascendMult = state.ascended ? 1.60 : 1.0;
-  return art.stoneMult * (pill ? pill.stoneMult : 1) * linearPerm * ascendMult;
+  return art.stoneMult * (pill ? pill.stoneMult : 1) * linearPerm * ascendMult * relB.stoneMult;
 }
 
 function getJadeMultiplier() {
   const pb = getPhysiqueBonuses();
-  return 1 + state.karmaPerks.k_jade * 0.15 + pb.jade;
+  const petB = getPetBonuses();
+  const relB = getRelicBonuses();
+  return (1 + state.karmaPerks.k_jade * 0.15 + pb.jade + petB.jade + relB.jadeAdd) * relB.jadeMult;
 }
 
 function getKarmaOnReincarnate() {
   if (state.realmIdx < 4) return 0; // 化神期起可轮回
   const pb = getPhysiqueBonuses();
+  const relB = getRelicBonuses();
   const base = Math.floor(1 + Math.pow(state.realmIdx - 3, 1.55) + state.subIdx * 0.4 + (state.ascended ? 4 : 0));
-  return Math.max(1, Math.floor(base * (1 + pb.karma)));
+  return Math.max(1, Math.floor(base * (1 + pb.karma + relB.karmaAdd)));
 }
 
 function getNextRealmLabel() {

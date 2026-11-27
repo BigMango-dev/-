@@ -77,6 +77,83 @@ function playPhysiqueSound(phId) {
   } catch (_) {}
 }
 
+
+// 宝物与先天至宝掉落判定（支持单次吐纳、离线批量与开秘宝加成）
+function rollRelicDrops(trials = 1, silent = false, rateBoost = 1) {
+  const n = Math.max(1, trials);
+  const droppedSupreme = [];
+
+  // 1. 最高境界 · 三大先天至宝（全境界全界域皆有极低概率掉落，仅需获取一次）
+  const unownedSupreme = RELICS.filter(r => r.unique && !(state.relics[r.id] > 0));
+  if (unownedSupreme.length > 0) {
+    const pSup = Math.min(0.05, getRelicTierLiveRate('supreme') * rateBoost);
+    for (const sup of unownedSupreme) {
+      const chance = n === 1 ? pSup : (1 - Math.pow(1 - pSup, n));
+      if (Math.random() < chance) {
+        state.relics[sup.id] = 1;
+        state.totalRelicsFound = (state.totalRelicsFound || 0) + 1;
+        droppedSupreme.push(sup);
+      }
+    }
+  }
+
+  for (const sup of droppedSupreme) {
+    addLog(`🌌 <span class="feed-fuchsia">【鸿蒙异象 · 逆天机缘！】</span>竟寻得唯一先天至宝 <span class="feed-amber">${sup.icon}「${sup.name}」</span>！`, 'major');
+    playPhysiqueSound('ph_hongmeng');
+    showBreakthroughAnimation({
+      type: 'ascend',
+      kicker: '鸿蒙降世 · 万古难遇 · 先天至宝',
+      icon: sup.icon,
+      title: `寻得先天至宝「${sup.name}」`,
+      subtitle: sup.desc,
+      rewards: ['唯一至宝 · 无需升级', '轮回永久保留', '诸天顶级气运']
+    });
+  }
+
+  // 2. 五品常规宝物（法器 -> 仙器/神器），重复获得自动升级
+  const normalTiers = ['xianqi', 'lingbao', 'fabao', 'lingqi', 'faqi'];
+  let foundAny = droppedSupreme.length > 0;
+
+  for (const tid of normalTiers) {
+    const p = Math.min(0.45, getRelicTierLiveRate(tid) * rateBoost);
+    if (p <= 0) continue;
+    let hits = 0;
+    if (n === 1) {
+      if (Math.random() < p) hits = 1;
+    } else {
+      const expected = n * p;
+      hits = Math.floor(expected) + (Math.random() < (expected % 1) ? 1 : 0);
+    }
+    if (hits <= 0) continue;
+
+    const pool = RELICS.filter(r => r.tier === tid);
+    const tierObj = RELIC_TIERS.find(t => t.id === tid);
+    for (let i = 0; i < hits; i++) {
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      state.relics[pick.id] = (state.relics[pick.id] || 0) + 1;
+      state.totalRelicsFound = (state.totalRelicsFound || 0) + 1;
+      foundAny = true;
+      if (!silent) {
+        const lv = state.relics[pick.id];
+        const isHigh = tid === 'xianqi' || tid === 'lingbao';
+        const tag = lv === 1 ? '新获得' : `重复强化 → Lv.${lv}`;
+        addLog(`🏺 寻宝奇遇！获得【<span class="${isHigh ? 'feed-fuchsia' : 'feed-amber'}">${tierObj.name}</span>】<span class="feed-strong">${pick.icon} ${pick.name}</span>（${tag}）！`, isHigh ? 'major' : 'treasure');
+        if (isHigh) {
+          showToast(`🏺 鸿运当头！获得${tierObj.name}「${pick.name}」(${tag})`, 'fuchsia');
+        } else if (lv === 1) {
+          showToast(`🏺 获得${tierObj.name}「${pick.name}」`, 'amber');
+        }
+      }
+    }
+    // 单次吐纳最多掉落 1 件常规宝物（优先高品阶）
+    if (n === 1 && hits > 0) break;
+  }
+
+  if (foundAny && activeTab === 'relics' && !silent) {
+    renderActiveTab();
+  }
+}
+
 function performMeditate(silent = false, batchScale = 1) {
   const scale = Math.max(1, batchScale);
   const world = getWorld();
@@ -94,11 +171,13 @@ function performMeditate(silent = false, batchScale = 1) {
     }
   }
 
-  // 血域魔体暴击加成
+  // 血域魔体、灵宠与宝物暴击加成
   const hasBlood = state.physiques.includes('ph_blood');
-  const critChance = hasBlood ? 0.22 : 0.05;
+  const petB = getPetBonuses();
+  const relB = getRelicBonuses();
+  const critChance = Math.min(0.75, (hasBlood ? 0.22 : 0.05) + petB.crit + relB.critAdd);
   const isCrit = Math.random() < critChance;
-  const critMult = isCrit ? (hasBlood ? 2.1 : 1.8) : 1.0;
+  const critMult = isCrit ? ((hasBlood ? 2.1 : 1.8) + relB.critMultAdd) : 1.0;
 
   const qiGain = Math.max(1, Math.round(
     (world.qiBase + flat.qiAdd) * getQiMultiplier() * critMult * (0.92 + Math.random() * 0.16) * scale
@@ -138,6 +217,9 @@ function performMeditate(silent = false, batchScale = 1) {
     }
   }
 
+  // 宝物与三大先天至宝寻宝判定
+  rollRelicDrops(scale, silent, 1);
+
   hudDirty = true;
 }
 
@@ -176,6 +258,7 @@ function attemptBreakthrough() {
   if (state.physiques.includes('ph_chaos')) chance += 0.12;
   if (state.physiques.includes('ph_hongmeng')) chance += 0.18;
   if (usedGuard) chance += (state.realmIdx >= 9 ? 0.18 : 0.25);
+  chance += getPetBonuses().bt + getRelicBonuses().btAdd;
   chance += (state.btPity || 0);
   chance = Math.max(0.01, Math.min(1.0, chance));
 
@@ -314,7 +397,7 @@ function doReincarnate() {
     return;
   }
   const gain = getKarmaOnReincarnate();
-  if (!confirm(`确定兵解转世，开启第 ${state.prestige + 1} 世轮回，获取 +${fmt(gain)} 轮回道果？\n\n【重置】：境界、修为、灵石、丹药、秘宝、法宝、21门境界功法、当前界域。\n【永久保留】：轮回世数、轮回道果、仙玉、轮回神通、逆天体质与体质专属神诀。\n【轮回加成】：每世永久 +20% 修为与 +25% 灵石（线性平衡），首次轮回解锁「逆天体质」！`)) {
+  if (!confirm(`确定兵解转世，开启第 ${state.prestige + 1} 世轮回，获取 +${fmt(gain)} 轮回道果？\n\n【重置】：境界、修为、灵石、丹药、秘宝、法宝、21门境界功法、当前界域。\n【永久保留】：轮回世数、轮回道果、仙玉、轮回神通、逆天体质、上古灵宠、全部宝物与三大先天至宝。\n【轮回加成】：每世永久 +20% 修为与 +25% 灵石（线性平衡），首次轮回解锁「逆天体质」！`)) {
     return;
   }
 
@@ -333,6 +416,7 @@ function doReincarnate() {
   state.pills = { p_qi: 5, p_zhuji: 0, p_jindan: 0, p_yuanying: 0, p_xian: 0, p_hong: 0 };
   state.chests = 0;
   REALMS.forEach(r => { state.arts[r.art.id] = 0; });
+  LUCK_UPGRADES.forEach(u => { if (u.resetOnPrestige) state.luckUpgrades[u.id] = 0; });
 
   playBreakthroughSound('ascend');
   showBreakthroughAnimation({
@@ -371,6 +455,7 @@ function openChests(count = 1) {
   state.jade += totalJade;
   addLog(`🎁 开启 <span class="feed-strong">${toOpen} 个机缘秘宝</span> → <span class="feed-amber">+${fmt(totalStones)} 灵石</span>，<span class="feed-emerald">+${fmt(totalJade)} 仙玉</span>！`, 'treasure');
   showToast(`🎁 +${fmt(totalStones)} 灵石，+${fmt(totalJade)} 仙玉`, 'emerald');
+  rollRelicDrops(toOpen, false, 3);
   hudDirty = true;
   flushHUD();
   renderActiveTab();
