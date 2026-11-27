@@ -291,8 +291,24 @@ function performMeditate(silent = false, batchScale = 1) {
   const isCrit = Math.random() < critChance;
   const critMult = isCrit ? ((hasBlood ? 2.1 : 1.8) + relB.critMultAdd) : 1.0;
 
+  // 🔥 燃石修炼超载判定：燃烧海量灵石换取 2.5x 修为与 1.6x 出战灵宠经验
+  let burnedThisTick = false;
+  let burnSpent = 0;
+  if (state.burnStones) {
+    const burnCost = Math.round(getBurnStoneCost() * scale);
+    if (state.stones >= burnCost) {
+      state.stones -= burnCost;
+      burnedThisTick = true;
+      burnSpent = burnCost;
+    } else if (!silent) {
+      state.burnStones = false;
+      showToast('🔥 灵石不足，已自动关闭「燃石修炼」', 'amber');
+    }
+  }
+  const burnQiMult = burnedThisTick ? 2.5 : 1.0;
+
   const qiGain = Math.max(1, Math.round(
-    (world.qiBase + flat.qiAdd) * getQiMultiplier() * critMult * (0.92 + Math.random() * 0.16) * scale
+    (world.qiBase + flat.qiAdd) * getQiMultiplier() * critMult * burnQiMult * (0.92 + Math.random() * 0.16) * scale
   ));
   const stoneGain = Math.max(1, Math.round(
     (6 * world.stoneMult + flat.stoneAdd) * realm.stoneBonus * 0.35 * getStoneMultiplier() * critMult * (0.9 + Math.random() * 0.2) * scale
@@ -310,7 +326,8 @@ function performMeditate(silent = false, batchScale = 1) {
     if (typeof spawnCultivatePopup === 'function') spawnCultivatePopup(qiGain, stoneGain, isCrit);
     cooldownRemaining = getCooldownSeconds();
     const critTag = isCrit ? ' <span class="feed-amber">[顿悟暴击!]</span>' : '';
-    addLog(`${world.icon} 在<span class="feed-strong">${world.name}</span>吐纳周天${critTag}：<span class="feed-strong">+${fmt(qiGain)} 修为</span>，<span class="feed-amber">+${fmt(stoneGain)} 灵石</span>。`);
+    const burnTag = burnedThisTick ? ` <span class="feed-fuchsia">[燃石 -${fmt(burnSpent)}]</span>` : '';
+    addLog(`${world.icon} 在<span class="feed-strong">${world.name}</span>吐纳周天${critTag}${burnTag}：<span class="feed-strong">+${fmt(qiGain)} 修为</span>，<span class="feed-amber">+${fmt(stoneGain)} 灵石</span>。`);
     if (!wasReady && state.qi >= reqQi) {
       showToast('⚡ 灵气已圆满！点击「突破境界」破关晋阶！', 'amber');
     }
@@ -331,8 +348,10 @@ function performMeditate(silent = false, batchScale = 1) {
 
   // 出战灵宠随吐纳获取经验（仅当前出战灵宠可获得经验，最高 100 级）
   if (state.activePet && (state.pets[state.activePet] || 0) > 0 && state.pets[state.activePet] < PET_MAX_LEVEL) {
+    const veinPetMult = 1 + getVeinBonuses().petExp;
+    const burnPetMult = burnedThisTick ? 1.6 : 1.0;
     const petExpGain = Math.max(1, Math.round(
-      (5 + state.realmIdx * 1.5) * (isCrit ? 1.35 : 1.0) * (pill ? 1.15 : 1.0) * (state.ascended ? 1.2 : 1.0) * scale
+      (5 + state.realmIdx * 1.5) * (isCrit ? 1.35 : 1.0) * (pill ? 1.15 : 1.0) * (state.ascended ? 1.2 : 1.0) * veinPetMult * burnPetMult * scale
     ));
     grantPetExp(state.activePet, petExpGain, silent);
   }
@@ -379,7 +398,7 @@ function attemptBreakthrough() {
   if (state.physiques.includes('ph_chaos')) chance += 0.12;
   if (state.physiques.includes('ph_hongmeng')) chance += 0.18;
   if (usedGuard) chance += (state.realmIdx >= 9 ? 0.18 : 0.25);
-  chance += getPetBonuses().bt + getRelicBonuses().btAdd;
+  chance += getPetBonuses().bt + getRelicBonuses().btAdd + getVeinBonuses().bt;
   chance += (state.btPity || 0);
   chance = Math.max(0.01, Math.min(1.0, chance));
 
@@ -534,7 +553,9 @@ function doReincarnate() {
   state.artifactId = 'art_0';
   state.ownedArtifacts = ['art_0'];
   state.activePill = null;
-  state.pills = { p_qi: 5, p_zhuji: 0, p_jindan: 0, p_yuanying: 0, p_xian: 0, p_hong: 0 };
+  state.pills = Object.fromEntries(PILLS.map(x => [x.id, x.id === 'p_qi' ? 5 : 0]));
+  state.veins = { v_qi: 0, v_pet: 0, v_luck: 0, v_bt: 0 };
+  state.burnStones = false;
   state.chests = 0;
   REALMS.forEach(r => { state.arts[r.art.id] = 0; });
   LUCK_UPGRADES.forEach(u => { if (u.resetOnPrestige) state.luckUpgrades[u.id] = 0; });

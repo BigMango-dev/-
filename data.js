@@ -31,7 +31,15 @@ const REALMS = [
   { idx: 17, tier: '至高', name: '准圣',     lifespan: '与界同寿',baseQi: 2.0e24, baseRate: 0.022, stoneBonus: 3.5e7,   desc: '斩去三尸执念，半步踏入圣人果位，万古难出一位。', art: { id: 'a_17', name: '斩三尸证道诀', baseCost: 6.0e18, scale: 1.58, maxLv: 20, qiAdd: 2.6e11, stoneAdd: 1.6e11 } },
   { idx: 18, tier: '至高', name: '圣人',     lifespan: '万劫不灭',baseQi: 6.5e25, baseRate: 0.016, stoneBonus: 1.2e8,   desc: '元神寄托天道，言出法随，镇压诸天万界。', art: { id: 'a_18', name: '混元圣道真经', baseCost: 8.5e19, scale: 1.58, maxLv: 20, qiAdd: 1.4e12, stoneAdd: 8.8e11 } },
   { idx: 19, tier: '至高', name: '道祖',     lifespan: '超脱纪元',baseQi: 2.4e27, baseRate: 0.012, stoneBonus: 4.2e8,   desc: '以身合道，传法万界，为诸圣之师。', art: { id: 'a_19', name: '造化玉碟总纲', baseCost: 1.2e21, scale: 1.58, maxLv: 20, qiAdd: 7.5e12, stoneAdd: 4.8e12 } },
-  { idx: 20, tier: '至高', name: '界尊',     lifespan: '无量永恒',baseQi: 9.5e28, baseRate: 0.008, stoneBonus: 1.6e9,   desc: '执掌诸天万界生灭，俯瞰混沌海的无上至尊。', art: { id: 'a_20', name: '诸天界尊创世录', baseCost: 1.8e22, scale: 1.58, maxLv: 25, qiAdd: 4.2e13, stoneAdd: 2.6e13 } }
+  { idx: 20, tier: '至高', name: '界尊',     lifespan: '无量永恒',baseQi: 9.5e28, baseRate: 0.008, stoneBonus: 1.6e9,   desc: '执掌诸天万界生灭，俯瞰混沌海的无上至尊。', art: { id: 'a_20', name: '诸天界尊创世录', baseCost: 1.8e22, scale: 1.58, maxLv: 25, qiAdd: 4.2e13, stoneAdd: 2.6e13 } },
+  // 超脱（界尊之上：宙尊 -> 祭道境 -> 无极境 -> 彼岸境 -> 万古唯一）
+  { idx: 21, tier: '超脱', name: '宙尊',     lifespan: '时空不朽',baseQi: 4.5e30, baseRate: 0.006, stoneBonus: 6.5e9,   desc: '界尊之上，不再局限于诸天万界，而是执掌整片时空宇宙海。', art: { id: 'a_21', name: '宙海时空真经',   baseCost: 3.0e23, scale: 1.58, maxLv: 25, qiAdd: 2.5e14, stoneAdd: 1.5e14 } },
+  { idx: 22, tier: '超脱', name: '祭道境',   lifespan: '焚道永存',baseQi: 2.4e32, baseRate: 0.005, stoneBonus: 2.8e10,  desc: '祭掉自身一切大道与过往，破而后立，凌驾于所有已知法则之上。', art: { id: 'a_22', name: '焚天祭道秘典',   baseCost: 5.5e24, scale: 1.58, maxLv: 25, qiAdd: 1.6e15, stoneAdd: 9.5e14 } },
+  { idx: 23, tier: '超脱', name: '无极境',   lifespan: '无始无终',baseQi: 1.4e34, baseRate: 0.004, stoneBonus: 1.2e11,  desc: '返璞归真，无形无象，一念衍化太极与万千混沌大道。', art: { id: 'a_23', name: '混元无极宝录',   baseCost: 1.1e26, scale: 1.58, maxLv: 25, qiAdd: 1.1e16, stoneAdd: 6.5e15 } },
+  { idx: 24, tier: '超脱', name: '彼岸境',   lifespan: '超脱苦海',baseQi: 9.0e35, baseRate: 0.003, stoneBonus: 5.5e11,  desc: '渡过无尽时光苦海，登临传说中万劫不侵的永恒彼岸。', art: { id: 'a_24', name: '永恒彼岸渡世经', baseCost: 2.4e27, scale: 1.58, maxLv: 25, qiAdd: 7.5e16, stoneAdd: 4.5e16 } },
+  { idx: 25, tier: '超脱', name: '万古唯一', lifespan: '唯一真我',baseQi: 6.5e37, baseRate: 0.002, stoneBonus: 2.6e12,  desc: '过去现在未来诸天万界唯一真我，彻底超脱维度、命运与生灭。', art: { id: 'a_25', name: '万古唯一真我诀', baseCost: 5.5e28, scale: 1.60, maxLv: 28, qiAdd: 5.5e17, stoneAdd: 3.3e17 } },
+  // 终极（60字满配浮夸终极境界）
+  { idx: 26, tier: '终极', name: '太初鸿蒙混元无极太上造化九霄之上因果之外横推古今未来弹指寂灭亿万宇宙超越一切维度逻辑轮回唯我独尊万劫不磨创世大天尊境', lifespan: '凌驾一切概念', baseQi: 5.5e39, baseRate: 0.001, stoneBonus: 1.5e13, desc: '融太初鸿蒙、道祖圣号与创世伟力于一身的终极绝巅，言出即创世，念动即归墟！', art: { id: 'a_26', name: '创世大天尊无上总纲', baseCost: 1.5e30, scale: 1.62, maxLv: 35, qiAdd: 4.5e18, stoneAdd: 2.8e18 } }
 ];
 
 // 9 大逆天体质（首次重生后开放，每觉醒一种，其余体质消耗 x4 血脉排斥递增！）
@@ -105,48 +113,65 @@ const PHYSIQUES = [
   }
 ];
 
-// 12 大游历界域（人界6域 + 仙界6域）
-// 界域主要提供更高灵石倍率与秘宝掉率，纯粹靠地图白嫖修为极慢，必须消费灵石升级法宝与功法！
+// 15 大游历界域（人界6域 + 仙界6域 + 超脱3域 — 每两个大境界必开新界域！）
 const WORLDS = [
-  { id: 'w_cangwu',   tier: '人界', name: '苍梧大陆', icon: '⛰️', reqRealm: 0,  reqAscend: false, stoneMult: 1,     qiBase: 8,      chestRate: 0.04,  gradient: 'linear-gradient(135deg, #0f766e, #0f172a)', desc: '灵脉初显的人界古陆，山川秀丽，最宜初入仙途者引气入体。' },
-  { id: 'w_yunmeng',  tier: '人界', name: '云梦泽',   icon: '🌫️', reqRealm: 1,  reqAscend: false, stoneMult: 3.5,   qiBase: 18,     chestRate: 0.045, gradient: 'linear-gradient(135deg, #0284c7, #1e1b4b)', desc: '烟波浩渺的灵雾大泽，灵石矿脉丰饶，筑基修士趋之若鹜。' },
-  { id: 'w_qingqiu',  tier: '人界', name: '青丘仙境', icon: '🌸', reqRealm: 2,  reqAscend: false, stoneMult: 13,    qiBase: 42,     chestRate: 0.05,  gradient: 'linear-gradient(135deg, #be185d, #1e1b4b)', desc: '桃花漫天的上古妖灵福地，藏有无数金丹灵果与秘宝。' },
-  { id: 'w_qixia',    tier: '人界', name: '栖霞大陆', icon: '🌅', reqRealm: 4,  reqAscend: false, stoneMult: 55,    qiBase: 240,    chestRate: 0.055, gradient: 'linear-gradient(135deg, #c2410c, #1c1917)', desc: '晚霞长明、紫气东来，化神大能在此感悟法则、开宗立派。' },
-  { id: 'w_kunlun',   tier: '人界', name: '昆仑神州', icon: '🏔️', reqRealm: 6,  reqAscend: false, stoneMult: 260,   qiBase: 1400,   chestRate: 0.06,  gradient: 'linear-gradient(135deg, #1d4ed8, #090d16)', desc: '人界万山之祖，龙脉汇聚之地，乃合体大乘修士闭关圣地。' },
-  { id: 'w_guixu',    tier: '人界', name: '归墟大陆', icon: '🌊', reqRealm: 8,  reqAscend: false, stoneMult: 1400,  qiBase: 8500,   chestRate: 0.065, gradient: 'linear-gradient(135deg, #4338ca, #09090b)', desc: '四海尽头、天劫汇聚之地，渡劫强者于此静候天门大开。' },
+  { id: 'w_cangwu',   tier: '人界', name: '苍梧大陆', icon: '⛰️', reqRealm: 0,  reqAscend: false, stoneMult: 1,       qiBase: 8,       chestRate: 0.04,  gradient: 'linear-gradient(135deg, #0f766e, #0f172a)', desc: '灵脉初显的人界古陆，山川秀丽，最宜初入仙途者引气入体。' },
+  { id: 'w_yunmeng',  tier: '人界', name: '云梦泽',   icon: '🌫️', reqRealm: 1,  reqAscend: false, stoneMult: 3.5,     qiBase: 18,      chestRate: 0.045, gradient: 'linear-gradient(135deg, #0284c7, #1e1b4b)', desc: '烟波浩渺的灵雾大泽，灵石矿脉丰饶，筑基修士趋之若鹜。' },
+  { id: 'w_qingqiu',  tier: '人界', name: '青丘仙境', icon: '🌸', reqRealm: 2,  reqAscend: false, stoneMult: 13,      qiBase: 42,      chestRate: 0.05,  gradient: 'linear-gradient(135deg, #be185d, #1e1b4b)', desc: '桃花漫天的上古妖灵福地，藏有无数金丹灵果与秘宝。' },
+  { id: 'w_qixia',    tier: '人界', name: '栖霞大陆', icon: '🌅', reqRealm: 4,  reqAscend: false, stoneMult: 55,      qiBase: 240,     chestRate: 0.055, gradient: 'linear-gradient(135deg, #c2410c, #1c1917)', desc: '晚霞长明、紫气东来，化神大能在此感悟法则、开宗立派。' },
+  { id: 'w_kunlun',   tier: '人界', name: '昆仑神州', icon: '🏔️', reqRealm: 6,  reqAscend: false, stoneMult: 260,     qiBase: 1400,    chestRate: 0.06,  gradient: 'linear-gradient(135deg, #1d4ed8, #090d16)', desc: '人界万山之祖，龙脉汇聚之地，乃合体大乘修士闭关圣地。' },
+  { id: 'w_guixu',    tier: '人界', name: '归墟大陆', icon: '🌊', reqRealm: 8,  reqAscend: false, stoneMult: 1400,    qiBase: 8500,    chestRate: 0.065, gradient: 'linear-gradient(135deg, #4338ca, #09090b)', desc: '四海尽头、天劫汇聚之地，渡劫强者于此静候天门大开。' },
   // 仙界六域
-  { id: 'w_penglai',  tier: '仙界', name: '蓬莱仙域', icon: '🏝️', reqRealm: 9,  reqAscend: true,  stoneMult: 8000,  qiBase: 45000,  chestRate: 0.07,  gradient: 'linear-gradient(135deg, #0d9488, #312e81)', desc: '仙界初入之境，仙鹤齐鸣，仙灵之气浓稠如雾。' },
-  { id: 'w_qionghua', tier: '仙界', name: '琼华仙域', icon: '🏯', reqRealm: 11, reqAscend: true,  stoneMult: 48000, qiBase: 280000, chestRate: 0.075, gradient: 'linear-gradient(135deg, #7c3aed, #1e1b4b)', desc: '琼楼玉宇悬浮九霄，天仙真仙云集论道之所。' },
-  { id: 'w_ziwei',    tier: '仙界', name: '紫微星域', icon: '✨', reqRealm: 13, reqAscend: true,  stoneMult: 3.0e5, qiBase: 1.8e6,  chestRate: 0.08,  gradient: 'linear-gradient(135deg, #6d28d9, #09090b)', desc: '群星拱卫帝星，玄仙金仙汲取星辰本源之地。' },
-  { id: 'w_honghuang',tier: '仙界', name: '洪荒古陆', icon: '🐉', reqRealm: 15, reqAscend: true,  stoneMult: 2.0e6, qiBase: 1.2e7,  chestRate: 0.085, gradient: 'linear-gradient(135deg, #b45309, #1c1917)', desc: '上古神兽遗迹遍布，太乙与大罗金仙争锋之古陆。' },
-  { id: 'w_xiuluo',   tier: '仙界', name: '修罗血域', icon: '🔥', reqRealm: 17, reqAscend: true,  stoneMult: 1.5e7, qiBase: 8.5e7,  chestRate: 0.09,  gradient: 'linear-gradient(135deg, #991b1b, #09090b)', desc: '杀伐法则弥漫的凶险古域，唯准圣圣人可在此掠夺无尽资源。' },
-  { id: 'w_taichu',   tier: '至高', name: '太初界域', icon: '🌀', reqRealm: 19, reqAscend: true,  stoneMult: 1.2e8, qiBase: 6.5e8,  chestRate: 0.10,  gradient: 'linear-gradient(135deg, #9333ea, #0284c7, #09090b)', desc: '混沌初开之地，鸿蒙紫气升腾，道祖与界尊俯瞰诸天之巅。' }
+  { id: 'w_penglai',  tier: '仙界', name: '蓬莱仙域', icon: '🏝️', reqRealm: 9,  reqAscend: true,  stoneMult: 8000,    qiBase: 45000,   chestRate: 0.07,  gradient: 'linear-gradient(135deg, #0d9488, #312e81)', desc: '仙界初入之境，仙鹤齐鸣，仙灵之气浓稠如雾。' },
+  { id: 'w_qionghua', tier: '仙界', name: '琼华仙域', icon: '🏯', reqRealm: 11, reqAscend: true,  stoneMult: 48000,   qiBase: 280000,  chestRate: 0.075, gradient: 'linear-gradient(135deg, #7c3aed, #1e1b4b)', desc: '琼楼玉宇悬浮九霄，天仙真仙云集论道之所。' },
+  { id: 'w_ziwei',    tier: '仙界', name: '紫微星域', icon: '✨', reqRealm: 13, reqAscend: true,  stoneMult: 3.0e5,   qiBase: 1.8e6,   chestRate: 0.08,  gradient: 'linear-gradient(135deg, #6d28d9, #09090b)', desc: '群星拱卫帝星，玄仙金仙汲取星辰本源之地。' },
+  { id: 'w_honghuang',tier: '仙界', name: '洪荒古陆', icon: '🐉', reqRealm: 15, reqAscend: true,  stoneMult: 2.0e6,   qiBase: 1.2e7,   chestRate: 0.085, gradient: 'linear-gradient(135deg, #b45309, #1c1917)', desc: '上古神兽遗迹遍布，太乙与大罗金仙争锋之古陆。' },
+  { id: 'w_xiuluo',   tier: '仙界', name: '修罗血域', icon: '🔥', reqRealm: 17, reqAscend: true,  stoneMult: 1.5e7,   qiBase: 8.5e7,   chestRate: 0.09,  gradient: 'linear-gradient(135deg, #991b1b, #09090b)', desc: '杀伐法则弥漫的凶险古域，唯准圣圣人可在此掠夺无尽资源。' },
+  { id: 'w_taichu',   tier: '至高', name: '太初界域', icon: '🌀', reqRealm: 19, reqAscend: true,  stoneMult: 1.2e8,   qiBase: 6.5e8,   chestRate: 0.10,  gradient: 'linear-gradient(135deg, #9333ea, #0284c7, #09090b)', desc: '混沌初开之地，鸿蒙紫气升腾，道祖与界尊俯瞰诸天之巅。' },
+  // 超脱三域
+  { id: 'w_zhouhai',  tier: '超脱', name: '宙海星渊', icon: '🌌', reqRealm: 21, reqAscend: true,  stoneMult: 1.2e9,   qiBase: 6.0e9,   chestRate: 0.11,  gradient: 'linear-gradient(135deg, #1d4ed8, #7e22ce, #09090b)', desc: '亿万宇宙生灭沉浮的无垠宙海，宙尊与祭道强者纵横之所。' },
+  { id: 'w_wuji',     tier: '超脱', name: '无极虚空', icon: '☯️', reqRealm: 23, reqAscend: true,  stoneMult: 1.4e10,  qiBase: 6.5e10,  chestRate: 0.12,  gradient: 'linear-gradient(135deg, #0f766e, #a21caf, #09090b)', desc: '太极未分、无形无象之虚空，无极与彼岸大能于此重演大道。' },
+  { id: 'w_wangu',    tier: '终极', name: '万古彼岸', icon: '👑', reqRealm: 25, reqAscend: true,  stoneMult: 1.8e11,  qiBase: 8.5e11,  chestRate: 0.14,  gradient: 'linear-gradient(135deg, #d97706, #9333ea, #0284c7)', desc: '时光尽头、因果之外的终极圣土，唯万古唯一与创世大天尊可踏足！' }
 ];
 
-// 本命法宝（12阶 — 核心战力与修炼加速来源，不换法宝几乎无法跨越后续大境界）
+// 本命法宝（17阶 — 前期至终极每两个大境界必有强力新法宝！）
 const ARTIFACTS = [
-  { id: 'art_0',  name: '木灵剑',     reqRealm: 0,  cost: 0,      qiMult: 1.0,  stoneMult: 1.0,  cdCut: 0 },
-  { id: 'art_1',  name: '青锋灵剑',   reqRealm: 0,  cost: 550,    qiMult: 1.45, stoneMult: 1.4,  cdCut: 0.05 },
-  { id: 'art_2',  name: '玄铁飞剑',   reqRealm: 1,  cost: 5500,   qiMult: 2.3,  stoneMult: 2.2,  cdCut: 0.12 },
-  { id: 'art_3',  name: '赤炎金丹炉', reqRealm: 2,  cost: 48000,  qiMult: 3.8,  stoneMult: 3.5,  cdCut: 0.18 },
-  { id: 'art_4',  name: '紫金葫芦',   reqRealm: 3,  cost: 4.5e5,  qiMult: 6.2,  stoneMult: 5.8,  cdCut: 0.24 },
-  { id: 'art_5',  name: '乾坤阴阳镜', reqRealm: 4,  cost: 4.2e6,  qiMult: 10.0, stoneMult: 9.5,  cdCut: 0.30 },
-  { id: 'art_6',  name: '九霄雷神戟', reqRealm: 6,  cost: 1.4e8,  qiMult: 18.0, stoneMult: 17.0, cdCut: 0.38 },
-  { id: 'art_7',  name: '诛仙古剑',   reqRealm: 8,  cost: 5.5e9,  qiMult: 34.0, stoneMult: 32.0, cdCut: 0.46 },
-  { id: 'art_8',  name: '太极仙图',   reqRealm: 10, cost: 2.8e11, qiMult: 68.0, stoneMult: 64.0, cdCut: 0.54 },
-  { id: 'art_9',  name: '东皇混沌钟', reqRealm: 13, cost: 2.5e13, qiMult: 145.0,stoneMult: 135.0,cdCut: 0.62 },
-  { id: 'art_10', name: '开天盘古斧', reqRealm: 16, cost: 3.5e15, qiMult: 320.0,stoneMult: 300.0,cdCut: 0.70 },
-  { id: 'art_11', name: '鸿蒙造化玉', reqRealm: 19, cost: 8.0e17, qiMult: 750.0,stoneMult: 700.0,cdCut: 0.80 }
+  { id: 'art_0',   name: '木灵剑',         reqRealm: 0,  cost: 0,      qiMult: 1.0,    stoneMult: 1.0,    cdCut: 0 },
+  { id: 'art_1',   name: '青锋灵剑',       reqRealm: 0,  cost: 550,    qiMult: 1.45,   stoneMult: 1.4,    cdCut: 0.05 },
+  { id: 'art_2',   name: '玄铁飞剑',       reqRealm: 1,  cost: 5500,   qiMult: 2.3,    stoneMult: 2.2,    cdCut: 0.12 },
+  { id: 'art_3',   name: '赤炎金丹炉',     reqRealm: 2,  cost: 48000,  qiMult: 3.8,    stoneMult: 3.5,    cdCut: 0.18 },
+  { id: 'art_4',   name: '紫金葫芦',       reqRealm: 3,  cost: 4.5e5,  qiMult: 6.2,    stoneMult: 5.8,    cdCut: 0.24 },
+  { id: 'art_5',   name: '乾坤阴阳镜',     reqRealm: 4,  cost: 4.2e6,  qiMult: 10.0,   stoneMult: 9.5,    cdCut: 0.30 },
+  { id: 'art_6',   name: '九霄雷神戟',     reqRealm: 6,  cost: 1.4e8,  qiMult: 18.0,   stoneMult: 17.0,   cdCut: 0.38 },
+  { id: 'art_7',   name: '诛仙古剑',       reqRealm: 8,  cost: 5.5e9,  qiMult: 34.0,   stoneMult: 32.0,   cdCut: 0.46 },
+  { id: 'art_8',   name: '太极仙图',       reqRealm: 10, cost: 2.8e11, qiMult: 68.0,   stoneMult: 64.0,   cdCut: 0.54 },
+  { id: 'art_8b',  name: '紫微星辰剑',     reqRealm: 12, cost: 8.5e12, qiMult: 115.0,  stoneMult: 108.0,  cdCut: 0.58 },
+  { id: 'art_9',   name: '东皇混沌钟',     reqRealm: 14, cost: 2.5e14, qiMult: 200.0,  stoneMult: 185.0,  cdCut: 0.63 },
+  { id: 'art_10',  name: '开天盘古斧',     reqRealm: 16, cost: 8.0e15, qiMult: 380.0,  stoneMult: 350.0,  cdCut: 0.70 },
+  { id: 'art_10b', name: '混元灭世枪',     reqRealm: 18, cost: 3.0e17, qiMult: 720.0,  stoneMult: 660.0,  cdCut: 0.76 },
+  { id: 'art_11',  name: '鸿蒙造化玉',     reqRealm: 20, cost: 1.2e19, qiMult: 1400.0, stoneMult: 1280.0, cdCut: 0.82 },
+  { id: 'art_12',  name: '祭道斩天刃',     reqRealm: 22, cost: 6.5e20, qiMult: 2800.0, stoneMult: 2500.0, cdCut: 0.88 },
+  { id: 'art_13',  name: '彼岸渡世舟',     reqRealm: 24, cost: 4.5e22, qiMult: 5800.0, stoneMult: 5200.0, cdCut: 0.94 },
+  { id: 'art_14',  name: '创世大天尊神印', reqRealm: 26, cost: 4.0e24, qiMult: 12500.0,stoneMult: 11000.0,cdCut: 1.00 }
 ];
 
-// 辅助丹药（消耗品，轮回时重置）
+// 辅助丹药（15阶 — 每两个大境界必有专属新丹药，消耗品，轮回时重置）
 const PILLS = [
-  { id: 'p_qi',      name: '聚气丹',   reqRealm: 0,  cost: 30,       qiMult: 1.40, stoneMult: 1.15, desc: '1.40x 吐纳修为，+15% 灵石（每颗消耗 1 次吐纳）。' },
-  { id: 'p_zhuji',   name: '筑基灵液', reqRealm: 1,  cost: 180,      qiMult: 1.75, stoneMult: 1.30, desc: '1.75x 吐纳修为，1.30x 灵石。' },
-  { id: 'p_jindan',  name: '凝金丹',   reqRealm: 2,  cost: 1100,     qiMult: 2.15, stoneMult: 1.55, desc: '2.15x 吐纳修为，1.55x 灵石。' },
-  { id: 'p_yuanying',name: '蕴婴仙丹', reqRealm: 4,  cost: 15000,    qiMult: 2.70, stoneMult: 1.95, desc: '2.70x 吐纳修为，1.95x 灵石。' },
-  { id: 'p_xian',    name: '九转金丹', reqRealm: 9,  cost: 650000,   qiMult: 3.60, stoneMult: 2.60, desc: '3.60x 仙灵修为，2.60x 灵石。' },
-  { id: 'p_hong',    name: '鸿蒙道丹', reqRealm: 15, cost: 4.5e7,    qiMult: 5.20, stoneMult: 3.80, desc: '5.20x 至高修为，3.80x 灵石。' }
+  { id: 'p_qi',       name: '聚气丹',     reqRealm: 0,  cost: 30,       qiMult: 1.40, stoneMult: 1.15, desc: '1.40x 吐纳修为，+15% 灵石（每颗消耗 1 次吐纳）。' },
+  { id: 'p_zhuji',    name: '筑基灵液',   reqRealm: 1,  cost: 180,      qiMult: 1.75, stoneMult: 1.30, desc: '1.75x 吐纳修为，1.30x 灵石。' },
+  { id: 'p_jindan',   name: '凝金丹',     reqRealm: 2,  cost: 1100,     qiMult: 2.15, stoneMult: 1.55, desc: '2.15x 吐纳修为，1.55x 灵石。' },
+  { id: 'p_yuanying', name: '蕴婴仙丹',   reqRealm: 4,  cost: 15000,    qiMult: 2.70, stoneMult: 1.95, desc: '2.70x 吐纳修为，1.95x 灵石。' },
+  { id: 'p_heti',     name: '天人合体丹', reqRealm: 6,  cost: 1.2e5,    qiMult: 3.10, stoneMult: 2.25, desc: '3.10x 吐纳修为，2.25x 灵石。' },
+  { id: 'p_dujie',    name: '九霄渡劫丹', reqRealm: 8,  cost: 9.5e5,    qiMult: 3.45, stoneMult: 2.50, desc: '3.45x 吐纳修为，2.50x 灵石。' },
+  { id: 'p_xian',     name: '九转金丹',   reqRealm: 9,  cost: 4.5e6,    qiMult: 3.85, stoneMult: 2.80, desc: '3.85x 仙灵修为，2.80x 灵石。' },
+  { id: 'p_tianxian', name: '凌霄仙露',   reqRealm: 11, cost: 2.8e7,    qiMult: 4.30, stoneMult: 3.15, desc: '4.30x 仙灵修为，3.15x 灵石。' },
+  { id: 'p_xuanxian', name: '玄元星辰丹', reqRealm: 13, cost: 1.8e8,    qiMult: 4.80, stoneMult: 3.50, desc: '4.80x 仙灵修为，3.50x 灵石。' },
+  { id: 'p_hong',     name: '鸿蒙道丹',   reqRealm: 15, cost: 1.2e9,    qiMult: 5.40, stoneMult: 3.95, desc: '5.40x 至高修为，3.95x 灵石。' },
+  { id: 'p_zhunsheng',name: '斩尸圣元丹', reqRealm: 17, cost: 9.0e9,    qiMult: 6.20, stoneMult: 4.50, desc: '6.20x 至高修为，4.50x 灵石。' },
+  { id: 'p_daozu',    name: '造化圣道丹', reqRealm: 19, cost: 7.5e10,   qiMult: 7.20, stoneMult: 5.20, desc: '7.20x 至高修为，5.20x 灵石。' },
+  { id: 'p_zhouzun',  name: '宙海永恒丹', reqRealm: 21, cost: 6.5e11,   qiMult: 8.50, stoneMult: 6.20, desc: '8.50x 超脱修为，6.20x 灵石。' },
+  { id: 'p_wuji',     name: '无极大道丹', reqRealm: 23, cost: 6.0e12,   qiMult: 10.2, stoneMult: 7.50, desc: '10.2x 超脱修为，7.50x 灵石。' },
+  { id: 'p_wangu',    name: '万古超脱神丹',reqRealm: 25,cost: 6.0e13,   qiMult: 12.8, stoneMult: 9.20, desc: '12.8x 终极修为，9.20x 灵石。' }
 ];
 
 // 轮回神通（消耗轮回道果，永久保留，线性成长防爆炸）
@@ -237,4 +262,13 @@ const LUCK_UPGRADES = [
   { id: 'lu_compass', name: '天机寻宝盘', currency: 'stones', baseCost: 1500,   scale: 1.88, maxLv: 30, luckPerLv: 0.12, resetOnPrestige: true,  desc: '每级 +12% 宝物掉落概率（消耗灵石，轮回重置）。' },
   { id: 'lu_eye',     name: '破妄寻宝瞳', currency: 'jade',   baseCost: 16,     scale: 1.72, maxLv: 25, luckPerLv: 0.22, resetOnPrestige: false, desc: '每级永久 +22% 宝物掉落概率（消耗仙玉，轮回永久保留）。' },
   { id: 'lu_array',   name: '聚运招宝阵', currency: 'stones', baseCost: 350000, scale: 2.05, maxLv: 20, luckPerLv: 0.25, resetOnPrestige: true,  desc: '布下聚运大阵，每级 +25% 宝物掉落概率（消耗灵石，轮回重置）。' }
+];
+
+
+// ==================== 洞府灵脉建设（超高上限灵石消耗黑洞，轮回重置） ====================
+const VEIN_BUILDINGS = [
+  { id: 'v_qi',   name: '聚灵神塔', icon: '🗼', baseCost: 2000,  scale: 1.48, maxLv: 999, qiPerLv: 0.10, petExpPerLv: 0,    luckPerLv: 0,    btPerLv: 0,     desc: '汇聚八荒灵气，每级 +10% 吐纳修为（最高 999 级）。' },
+  { id: 'v_pet',  name: '御兽仙殿', icon: '🏛️', baseCost: 3500,  scale: 1.50, maxLv: 999, qiPerLv: 0,    petExpPerLv: 0.08, luckPerLv: 0,    btPerLv: 0,     desc: '滋养出战神兽，每级 +8% 出战灵宠经验获取（最高 999 级）。' },
+  { id: 'v_luck', name: '炼宝灵阁', icon: '🏯', baseCost: 5000,  scale: 1.55, maxLv: 999, qiPerLv: 0,    petExpPerLv: 0,    luckPerLv: 0.06, btPerLv: 0,     desc: '聚运纳宝，每级 +6% 至宝掉落与灵宠结缘概率（最高 999 级）。' },
+  { id: 'v_bt',   name: '护道古碑', icon: '🪨', baseCost: 12000, scale: 1.65, maxLv: 75,  qiPerLv: 0,    petExpPerLv: 0,    luckPerLv: 0,    btPerLv: 0.002, desc: '镇压心魔劫，每级 +0.2% 破境成功率（最高 75 级 / +15%）。' }
 ];

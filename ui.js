@@ -33,6 +33,7 @@ const DOM = {
   pillShort: document.getElementById('ui-active-pill-short'),
   autoMedBtn: document.getElementById('btn-automeditate'),
   jadeGuardBtn: document.getElementById('btn-jade-guard'),
+  burnStonesBtn: document.getElementById('btn-burn-stones'),
   chestCnt: document.getElementById('quick-chest-count'),
   chestDot: document.getElementById('chest-ready-dot'),
   prestigeDot: document.getElementById('prestige-ready-dot'),
@@ -338,7 +339,13 @@ const AVATAR_STYLES = [
   { robe: '#991b1b', trim: '#fde047', aura: '#fb7185', blade: '#fecdd3', skin: '#fffbeb', hair: '#ffffff', crown: 'supreme',  pose: 'supreme_dao',   fx: 'threeorbs' },  // 17 准圣
   { robe: '#ffffff', trim: '#fbbf24', aura: '#fde047', blade: '#fef08a', skin: '#fffbeb', hair: '#ffffff', crown: 'supreme',  pose: 'supreme_dao',   fx: 'sage' },       // 18 圣人
   { robe: '#3b0764', trim: '#fde047', aura: '#c084fc', blade: '#fde047', skin: '#fffbeb', hair: '#ffffff', crown: 'supreme',  pose: 'supreme_dao',   fx: 'daodisc' },    // 19 道祖
-  { robe: '#09090b', trim: '#f0abfc', aura: '#38bdf8', blade: '#f0abfc', skin: '#fffbeb', hair: '#fde047', crown: 'supreme',  pose: 'supreme_dao',   fx: 'multiverse' }  // 20 界尊
+  { robe: '#09090b', trim: '#f0abfc', aura: '#38bdf8', blade: '#f0abfc', skin: '#fffbeb', hair: '#fde047', crown: 'supreme',  pose: 'supreme_dao',   fx: 'multiverse' }, // 20 界尊
+  { robe: '#0c4a6e', trim: '#fde047', aura: '#38bdf8', blade: '#7dd3fc', skin: '#fffbeb', hair: '#ffffff', crown: 'supreme',  pose: 'cosmic_finger', fx: 'multiverse' }, // 21 宙尊
+  { robe: '#7f1d1d', trim: '#fef08a', aura: '#fb7185', blade: '#fde047', skin: '#fffbeb', hair: '#fde047', crown: 'supreme',  pose: 'supreme_dao',   fx: 'daodisc' },    // 22 祭道境
+  { robe: '#f8fafc', trim: '#5eead4', aura: '#2dd4bf', blade: '#ffffff', skin: '#fffbeb', hair: '#e2e8f0', crown: 'supreme',  pose: 'cosmic_finger', fx: 'taiji' },      // 23 无极境
+  { robe: '#4c1d95', trim: '#fde047', aura: '#f0abfc', blade: '#fef08a', skin: '#fffbeb', hair: '#ffffff', crown: 'supreme',  pose: 'supreme_dao',   fx: 'sage' },       // 24 彼岸境
+  { robe: '#1e1b4b', trim: '#fde047', aura: '#fde047', blade: '#ffffff', skin: '#fffbeb', hair: '#fde047', crown: 'supreme',  pose: 'supreme_dao',   fx: 'multiverse' }, // 25 万古唯一
+  { robe: '#05020a', trim: '#fde047', aura: '#f0abfc', blade: '#fde047', skin: '#ffffff', hair: '#fde047', crown: 'supreme',  pose: 'supreme_dao',   fx: 'multiverse' }  // 26 创世大天尊境
 ];
 
 function getCultivatorAvatarSVG(realmIdx, size = 94, subIdx = 0) {
@@ -597,7 +604,11 @@ function showBreakthroughAnimation({ type = 'minor', kicker, icon, customSvg = n
   } else {
     iconEl.textContent = icon;
   }
-  document.getElementById('bt-title').textContent = title;
+  const btTitleEl = document.getElementById('bt-title');
+  btTitleEl.textContent = title;
+  btTitleEl.className = (title && title.length > 24)
+    ? 'text-base sm:text-xl font-black tracking-wide leading-snug bg-gradient-to-r from-amber-200 via-fuchsia-200 to-cyan-200 bg-clip-text text-transparent'
+    : 'text-2xl sm:text-3xl font-black tracking-wider text-white';
   document.getElementById('bt-subtitle').textContent = subtitle;
   document.getElementById('bt-rewards').innerHTML = rewards.map(r =>
     `<span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-black/45 border border-amber-400/45 text-amber-200">${r}</span>`
@@ -1020,7 +1031,17 @@ function flushHUD() {
   setText('sfx', DOM.sfxBtn, state.sfxEnabled ? '🔊' : '🔇');
 
   setText('tierTag', DOM.tierTag, r.tier);
-  setText('realmMain', DOM.realmMain, `${r.name} · ${SUB_REALMS[state.subIdx]}`);
+  const fullRealmTitle = `${r.name} · ${SUB_REALMS[state.subIdx]}`;
+  setText('realmMain', DOM.realmMain, fullRealmTitle);
+  if (DOM.realmMain) {
+    const isUltraLong = r.name.length > 16;
+    if (textCache.realmLong !== isUltraLong) {
+      textCache.realmLong = isUltraLong;
+      DOM.realmMain.className = isUltraLong
+        ? 'text-[11px] sm:text-xs font-black bg-gradient-to-r from-amber-200 via-fuchsia-200 to-cyan-200 bg-clip-text text-transparent leading-snug'
+        : 'text-sm sm:text-lg font-black text-white tracking-wide leading-snug';
+    }
+  }
   setText('qiText', DOM.qiTextMain, `${fmt(state.qi)} / ${fmt(req)} 修为`);
   setText('qiPct', DOM.qiPctMain, `${(ratio * 100).toFixed(1)}%`);
   DOM.qiBarMain.style.transform = `scaleX(${ratio})`;
@@ -1096,6 +1117,16 @@ function flushHUD() {
     DOM.jadeGuardBtn.textContent = state.useJadeGuard ? `🛡️ 护道(${fmt(guardCost)}💎)` : '🛡️ 护道: 关';
     DOM.jadeGuardBtn.className = state.useJadeGuard
       ? 'py-2 px-2 rounded-xl bg-amber-500/20 border border-amber-400/55 text-amber-200 text-[11px] font-bold truncate transition active:scale-95'
+      : 'py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-300 text-[11px] font-bold truncate transition active:scale-95';
+  }
+
+  const burnCost = getBurnStoneCost();
+  const burnKey = `${state.burnStones}:${burnCost}`;
+  if (textCache.burnStones !== burnKey && DOM.burnStonesBtn) {
+    textCache.burnStones = burnKey;
+    DOM.burnStonesBtn.textContent = state.burnStones ? `🔥 燃石(${fmt(burnCost)})` : '🔥 燃石: 关';
+    DOM.burnStonesBtn.className = state.burnStones
+      ? 'py-2 px-2 rounded-xl bg-rose-500/25 border border-rose-400/65 text-rose-200 text-[11px] font-extrabold truncate transition active:scale-95 shadow-[0_0_12px_rgba(244,63,94,0.35)]'
       : 'py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-300 text-[11px] font-bold truncate transition active:scale-95';
   }
 
@@ -1278,6 +1309,14 @@ function refreshAffordability() {
       btn.disabled = !calc.canBuy;
       btn.textContent = fmtBulkBtn(calc, '提升气运', unit);
     });
+  } else if (activeTab === 'veins') {
+    DOM.tabArea.querySelectorAll('[data-vein-buy]').forEach(btn => {
+      const b = VEIN_BUILDINGS.find(x => x.id === btn.dataset.veinBuy);
+      if (!b) return;
+      const calc = calcBulk(b.baseCost, b.scale, (state.veins && state.veins[b.id]) || 0, b.maxLv, state.stones);
+      btn.disabled = !calc.canBuy;
+      btn.textContent = fmtBulkBtn(calc, '扩建灵脉', '灵石');
+    });
   } else if (activeTab === 'reincarnate') {
     DOM.tabArea.querySelectorAll('[data-buy-kperk]').forEach(btn => {
       const k = KARMA_PERKS.find(x => x.id === btn.dataset.buyKperk);
@@ -1309,6 +1348,7 @@ function renderActiveTab() {
   else if (activeTab === 'treasures') renderTreasuresTab(area);
   else if (activeTab === 'pets') renderPetsTab(area);
   else if (activeTab === 'relics') renderRelicsTab(area);
+  else if (activeTab === 'veins') renderVeinsTab(area);
   else if (activeTab === 'worlds') renderWorldsTab(area);
   else if (activeTab === 'realms') renderRealmsTab(area);
   else if (activeTab === 'physiques') renderPhysiquesTab(area);
@@ -1913,6 +1953,83 @@ function renderRelicsTab(container) {
   });
 }
 
+
+function renderVeinsTab(container) {
+  const vb = getVeinBonuses();
+  const totalLv = VEIN_BUILDINGS.reduce((sum, b) => sum + ((state.veins && state.veins[b.id]) || 0), 0);
+
+  const cards = VEIN_BUILDINGS.map(b => {
+    const lv = (state.veins && state.veins[b.id]) || 0;
+    const calc = calcBulk(b.baseCost, b.scale, lv, b.maxLv, state.stones);
+    let curStat = '';
+    if (b.qiPerLv)     curStat = `当前总加成：+${fmt(Math.round(lv * b.qiPerLv * 100))}% 修为`;
+    if (b.petExpPerLv) curStat = `当前总加成：+${fmt(Math.round(lv * b.petExpPerLv * 100))}% 出战灵宠经验`;
+    if (b.luckPerLv)   curStat = `当前总加成：+${fmt(Math.round(lv * b.luckPerLv * 100))}% 至宝与灵宠掉率`;
+    if (b.btPerLv)     curStat = `当前总加成：+${(Math.min(0.15, lv * b.btPerLv) * 100).toFixed(1)}% 破境成功率`;
+
+    return `
+      <div class="p-3.5 rounded-xl bg-xian-850 border ${lv > 0 ? 'border-amber-400/45 shadow' : 'border-slate-800'} flex flex-col justify-between gap-3">
+        <div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-black text-sm text-white">${b.icon} ${b.name}</span>
+            <span class="px-2 py-0.5 rounded-md bg-xian-950 text-[11px] font-mono font-bold text-amber-300">Lv.${lv}/${b.maxLv}</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">${b.desc}</p>
+          <div class="text-[11px] font-mono font-bold text-emerald-300 mt-2">${curStat}</div>
+        </div>
+        <button data-vein-buy="${b.id}" ${calc.canBuy ? '' : 'disabled'} class="w-full py-2 px-3 rounded-xl font-extrabold text-xs transition active:scale-95 ${
+          calc.maxed ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 cursor-default'
+          : 'bg-gradient-to-r from-amber-500 to-teal-600 hover:brightness-110 disabled:bg-xian-950 disabled:from-xian-950 disabled:to-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800 text-white'
+        }">${fmtBulkBtn(calc, '扩建灵脉', '灵石')}</button>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="space-y-4">
+      <div class="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-teal-500/15 to-indigo-500/15 border border-amber-400/40 space-y-1.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="font-black text-sm text-amber-200">🏛️ 洞府灵脉建设（海量灵石专属归宿）</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-black/40 text-xs font-mono font-bold text-teal-300">灵脉总阶：${fmt(totalLv)} 级</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          将盈余灵石尽数灌注于洞府四大神殿，持续拔高修为、出战灵宠经验、寻宝结缘率与破境成功率（轮回转世时重置，可搭配洞府左侧「🔥 燃石修炼」双管齐下消耗灵石）。
+        </p>
+        <div class="flex flex-wrap gap-1.5 pt-1 text-[10px] font-mono">
+          <span class="px-2 py-0.5 rounded bg-teal-500/15 text-teal-300">+${fmt(Math.round(vb.qi * 100))}% 修为</span>
+          <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300">+${fmt(Math.round(vb.petExp * 100))}% 灵宠经验</span>
+          <span class="px-2 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300">+${fmt(Math.round(vb.luck * 100))}% 掉率气运</span>
+          <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300">+${(vb.bt * 100).toFixed(1)}% 破境率</span>
+        </div>
+      </div>
+
+      ${renderBuyModeBar('<span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">灵脉建筑批量扩建</span>')}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${cards}</div>
+    </div>
+  `;
+
+  container.querySelectorAll('[data-buy-mode]').forEach(btn => {
+    btn.onclick = () => { buyMode = btn.dataset.buyMode; renderActiveTab(); };
+  });
+  container.querySelectorAll('[data-vein-buy]').forEach(btn => {
+    btn.onclick = () => {
+      const b = VEIN_BUILDINGS.find(x => x.id === btn.dataset.veinBuy);
+      if (!b) return;
+      const lv = (state.veins && state.veins[b.id]) || 0;
+      const calc = calcBulk(b.baseCost, b.scale, lv, b.maxLv, state.stones);
+      if (calc.canBuy && calc.count > 0) {
+        state.stones -= calc.cost;
+        if (!state.veins) state.veins = { v_qi: 0, v_pet: 0, v_luck: 0, v_bt: 0 };
+        state.veins[b.id] = lv + calc.count;
+        saveGame(false);
+        hudDirty = true;
+        flushHUD();
+        renderActiveTab();
+      }
+    };
+  });
+}
+
 function renderWorldsTab(container) {
   let shownMystery = false;
   const cards = WORLDS.map(w => {
@@ -1993,7 +2110,7 @@ function renderRealmsTab(container) {
       <div class="p-3.5 rounded-xl border ${isCur ? 'bg-teal-500/15 border-teal-400/60' : 'bg-xian-850 border-slate-800'} flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <div class="flex items-center gap-2">
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${r.tier === '人界' ? 'bg-sky-500/20 text-sky-300' : r.tier === '仙界' ? 'bg-amber-500/20 text-amber-300' : 'bg-fuchsia-500/20 text-fuchsia-300'}">${r.tier}</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${r.tier === '人界' ? 'bg-sky-500/20 text-sky-300' : r.tier === '仙界' ? 'bg-amber-500/20 text-amber-300' : r.tier === '至高' ? 'bg-fuchsia-500/20 text-fuchsia-300' : r.tier === '超脱' ? 'bg-cyan-500/25 text-cyan-200' : 'bg-gradient-to-r from-amber-400/35 to-fuchsia-500/35 text-amber-100'}">${r.tier}</span>
             <span class="font-black text-sm text-white">${r.name}</span>
             ${isCur ? `<span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 text-[10px] font-bold">当前：${SUB_REALMS[state.subIdx]}</span>` : ''}
           </div>

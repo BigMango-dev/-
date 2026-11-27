@@ -243,6 +243,16 @@ if (DOM.jadeGuardBtn) {
       : '已关闭仙玉护道', state.useJadeGuard ? 'amber' : 'cyan');
   };
 }
+if (DOM.burnStonesBtn) {
+  DOM.burnStonesBtn.onclick = () => {
+    state.burnStones = !state.burnStones;
+    hudDirty = true;
+    flushHUD();
+    showToast(state.burnStones
+      ? `🔥 已开启燃石修炼：每次吐纳燃烧 ${fmt(getBurnStoneCost())} 灵石，享 2.5x 修为 + 1.6x 灵宠经验！`
+      : '已关闭燃石修炼', state.burnStones ? 'fuchsia' : 'cyan');
+  };
+}
 DOM.sfxBtn.onclick = () => {
   state.sfxEnabled = !state.sfxEnabled;
   hudDirty = true;

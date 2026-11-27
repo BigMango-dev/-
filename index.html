@@ -23,7 +23,7 @@
       }
     };
   </script>
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=10" />
 </head>
 <body class="text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500/30 selection:text-amber-200">
   <!-- 全屏仙气氛围层（仙界后展现流云、金辉灵点与星芒） -->
@@ -93,9 +93,9 @@
     <!-- 醒目全宽境界与修为条 -->
     <div id="realm-hero-strip" class="border-t border-slate-800/80 bg-xian-950/95">
       <div class="max-w-[1440px] mx-auto px-3 sm:px-5 py-2 flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-4">
-        <div class="flex items-center gap-2 px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-teal-500/25 to-indigo-500/25 border border-amber-400/45 shadow shrink-0">
-          <span id="ui-realm-tier-tag" class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-black/40 text-amber-300">人界</span>
-          <span id="stat-realm-main" class="text-sm sm:text-lg font-black text-white tracking-wide leading-none">炼气期 · 初期</span>
+        <div class="flex items-center gap-2 px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-teal-500/25 to-indigo-500/25 border border-amber-400/45 shadow shrink-0 max-w-full sm:max-w-[46%]">
+          <span id="ui-realm-tier-tag" class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-black/40 text-amber-300 shrink-0">人界</span>
+          <span id="stat-realm-main" class="text-sm sm:text-lg font-black text-white tracking-wide leading-snug">炼气期 · 初期</span>
         </div>
 
         <div class="flex-1 min-w-[180px]">
@@ -175,8 +175,8 @@
             <span id="btn-breakthrough-card-text">灵气圆满 · 立即破境！</span>
           </button>
 
-          <!-- 辅助开关：丹药切换、自动打坐、仙玉护道 -->
-          <div class="grid grid-cols-3 gap-2">
+          <!-- 辅助开关：丹药切换、自动打坐、仙玉护道、燃石修炼 -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button id="btn-cycle-pill" class="py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold truncate transition active:scale-95" title="点击切换已拥有丹药">
               💊 <span id="ui-active-pill-short">无丹药</span>
             </button>
@@ -185,6 +185,9 @@
             </button>
             <button id="btn-jade-guard" class="py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-300 text-[11px] font-bold truncate transition active:scale-95" title="开启后每次破境消耗仙玉，大幅提升成功率并减半失败修为损耗">
               🛡️ 护道: 关
+            </button>
+            <button id="btn-burn-stones" class="py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-300 text-[11px] font-bold truncate transition active:scale-95" title="开启后每次吐纳燃烧大量灵石，获得 2.5x 修为与 1.6x 出战灵宠经验！">
+              🔥 燃石: 关
             </button>
           </div>
 
@@ -235,6 +238,9 @@
           </button>
           <button data-tab="relics" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition">
             🏺 至宝阁
+          </button>
+          <button data-tab="veins" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition">
+            🏛️ 洞府灵脉
           </button>
           <button data-tab="worlds" class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap transition">
             🗺️ 游历界域
@@ -416,12 +422,12 @@
   </div>
 
   <!-- 核心模块化脚本 -->
-  <script defer src="data.js?v=9"></script>
-  <script defer src="state.js?v=9"></script>
-  <script defer src="engine.js?v=9"></script>
-  <script defer src="ui.js?v=9"></script>
-  <script defer src="main.js?v=9"></script>
+  <script defer src="data.js?v=10"></script>
+  <script defer src="state.js?v=10"></script>
+  <script defer src="engine.js?v=10"></script>
+  <script defer src="ui.js?v=10"></script>
+  <script defer src="main.js?v=10"></script>
   <!-- Firebase 游客/Google 单弹窗登录 + 独立修仙云存档与诸天金榜 -->
-  <script type="module" src="firebase.js?v=9"></script>
+  <script type="module" src="firebase.js?v=10"></script>
 </body>
 </html>

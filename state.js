@@ -38,6 +38,8 @@ function defaultState() {
     relics,             // 宝物等级 (重复获得自动升级；先天至宝最高1级)
     luckUpgrades: { lu_compass: 0, lu_eye: 0, lu_array: 0 },
     petLuckUpgrades: { plu_incense: 0, plu_bell: 0, plu_altar: 0 },
+    veins: { v_qi: 0, v_pet: 0, v_luck: 0, v_bt: 0 },
+    burnStones: false,
     totalRelicsFound: 0,
     totalPetsFound: 0,
     karmaPerks: { k_qi: 0, k_stone: 0, k_speed: 0, k_jade: 0, k_luck: 0 },
@@ -100,12 +102,14 @@ function mergeState(parsed) {
     relics: sanitizeMap(p.relics, def.relics),
     luckUpgrades: sanitizeMap(p.luckUpgrades, def.luckUpgrades),
     petLuckUpgrades: sanitizeMap(p.petLuckUpgrades, def.petLuckUpgrades),
+    veins: sanitizeMap(p.veins, def.veins),
+    burnStones: Boolean(p.burnStones),
     totalRelicsFound: Math.floor(safeNum(p.totalRelicsFound, 0, 0)),
     totalPetsFound: Math.floor(safeNum(p.totalPetsFound, 0, 0)),
     karmaPerks: sanitizeMap(p.karmaPerks, def.karmaPerks),
     btPity: safeNum(p.btPity, 0, 0),
     useJadeGuard: Boolean(p.useJadeGuard),
-    pills: sanitizeMap(p.pills, { p_qi: 5, p_zhuji: 0, p_jindan: 0, p_yuanying: 0, p_xian: 0, p_hong: 0 }),
+    pills: sanitizeMap(p.pills, Object.fromEntries(PILLS.map(x => [x.id, x.id === 'p_qi' ? 5 : 0]))),
     lastActiveAt: safeNum(p.lastActiveAt, Date.now(), 0)
   };
   if (state.realmIdx > state.maxRealmEver) state.maxRealmEver = state.realmIdx;
@@ -134,13 +138,14 @@ function fmt(n) {
   if (typeof n !== 'number' || Number.isNaN(n)) return '0';
   if (!Number.isFinite(n)) return '∞';
   if (n < 10000) return Math.floor(n).toLocaleString();
-  const units = ['万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载'];
+  const units = ['万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极', '恒沙', '阿僧', '那由', '不可', '无量', '大数'];
   let val = n;
   let idx = -1;
   while (val >= 10000 && idx < units.length - 1) {
     val /= 10000;
     idx++;
   }
+  if (val >= 10000) return n.toExponential(2);
   return val.toFixed(val >= 100 ? 1 : 2) + units[idx];
 }
 
@@ -156,7 +161,9 @@ function getActivePill() {
 function getQiRequired() {
   const r = getRealm();
   let subScales = [1.0, 2.5, 5.5, 12.0]; // 人界：小境逐步拉长
-  if (state.realmIdx >= 17) {
+  if (state.realmIdx >= 21) {
+    subScales = [1.0, 5.0, 16.0, 42.0];  // 超脱/终极绝壁
+  } else if (state.realmIdx >= 17) {
     subScales = [1.0, 4.0, 12.0, 30.0];  // 至高天堑
   } else if (state.realmIdx >= 9) {
     subScales = [1.0, 3.2, 8.5, 20.0];   // 仙界断崖
@@ -217,7 +224,7 @@ function getBreakthroughChance() {
   }
 
   // 上古灵宠与宝物破境加持
-  chance += getPetBonuses().bt + getRelicBonuses().btAdd;
+  chance += getPetBonuses().bt + getRelicBonuses().btAdd + getVeinBonuses().bt;
 
   // 失败感悟保底
   chance += (state.btPity || 0);
@@ -407,7 +414,7 @@ function getTreasureLuckMultiplier() {
   const pb = getPetBonuses();
   const rb = getRelicBonuses();
   const karmaLuck = (state.karmaPerks.k_luck || 0) * 0.25;
-  return 1 + upgLuck + pb.luck + rb.luckAdd + karmaLuck;
+  return 1 + upgLuck + pb.luck + rb.luckAdd + karmaLuck + getVeinBonuses().luck;
 }
 
 // 获取某个品阶当前的实时掉率
@@ -431,7 +438,7 @@ function getPetLuckMultiplier() {
   }
   const pb = getPetBonuses();
   const karmaLuck = (state.karmaPerks.k_luck || 0) * 0.20;
-  return 1 + upgLuck + pb.luck * 0.5 + karmaLuck;
+  return 1 + upgLuck + pb.luck * 0.5 + karmaLuck + getVeinBonuses().luck;
 }
 
 // 获取某个灵宠品阶的实时结缘概率
@@ -444,13 +451,34 @@ function getPetTierLiveRate(tierId) {
 }
 
 
+
+// 汇总洞府灵脉建筑加成
+function getVeinBonuses() {
+  const v = state.veins || {};
+  return {
+    qi: (v.v_qi || 0) * 0.10,
+    petExp: (v.v_pet || 0) * 0.08,
+    luck: (v.v_luck || 0) * 0.06,
+    bt: Math.min(0.15, (v.v_bt || 0) * 0.002)
+  };
+}
+
+// 燃石修炼每次吐纳消耗的灵石（约为单次基础灵石产出的 2.4 倍，专治灵石溢出）
+function getBurnStoneCost() {
+  const world = getWorld();
+  const realm = getRealm();
+  const flat = getArtsFlatGains();
+  const baseTickStone = (6 * world.stoneMult + flat.stoneAdd) * realm.stoneBonus * 0.35 * getStoneMultiplier();
+  return Math.max(80, Math.round(baseTickStone * 2.4));
+}
+
 function getQiMultiplier() {
   const art = getArtifact();
   const pill = getActivePill();
   const pb = getPhysiqueBonuses();
   const petB = getPetBonuses();
   const relB = getRelicBonuses();
-  const linearPerm = 1 + state.prestige * 0.20 + state.karmaPerks.k_qi * 0.15 + pb.qi + petB.qi + relB.qiAdd;
+  const linearPerm = 1 + state.prestige * 0.20 + state.karmaPerks.k_qi * 0.15 + pb.qi + petB.qi + relB.qiAdd + getVeinBonuses().qi;
   const ascendMult = state.ascended ? 1.50 : 1.0;
   return art.qiMult * (pill ? pill.qiMult : 1) * linearPerm * ascendMult * relB.qiMult;
 }
