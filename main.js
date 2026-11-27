@@ -139,7 +139,7 @@ function cyclePill() {
   state.activePill = owned[(idx + 1) % owned.length];
   hudDirty = true;
   flushHUD();
-  if (activeTab === 'treasures') renderActiveTab();
+  if (activeTab === 'pills') renderActiveTab();
 }
 
 function gameLoop() {

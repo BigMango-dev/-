@@ -1268,13 +1268,6 @@ function refreshAffordability() {
       btn.textContent = fmtBulkBtn(calc, '淬炼神诀', '💎');
     });
   } else if (activeTab === 'treasures') {
-    DOM.tabArea.querySelectorAll('[data-pill-buy]').forEach(btn => {
-      const p = PILLS.find(x => x.id === btn.dataset.pillBuy);
-      if (!p) return;
-      const calc = calcPillBuy(p, state.stones, pillBuyMode);
-      btn.disabled = !calc.canBuy;
-      btn.textContent = fmtPillBuyBtn(calc, pillBuyMode);
-    });
     DOM.tabArea.querySelectorAll('[data-artifact]').forEach(btn => {
       const a = ARTIFACTS.find(x => x.id === btn.dataset.artifact);
       if (!a) return;
@@ -1283,6 +1276,14 @@ function refreshAffordability() {
       if (!owned && !eq) {
         btn.disabled = state.stones < a.cost || state.realmIdx < a.reqRealm;
       }
+    });
+  } else if (activeTab === 'pills') {
+    DOM.tabArea.querySelectorAll('[data-pill-buy]').forEach(btn => {
+      const p = PILLS.find(x => x.id === btn.dataset.pillBuy);
+      if (!p) return;
+      const calc = calcPillBuy(p, state.stones, pillBuyMode);
+      btn.disabled = !calc.canBuy;
+      btn.textContent = fmtPillBuyBtn(calc, pillBuyMode);
     });
   } else if (activeTab === 'pets') {
     DOM.tabArea.querySelectorAll('[data-pet-luck-buy]').forEach(btn => {
@@ -1357,6 +1358,7 @@ function renderActiveTab() {
   const area = DOM.tabArea;
   if (activeTab === 'arts') renderArtsTab(area);
   else if (activeTab === 'treasures') renderTreasuresTab(area);
+  else if (activeTab === 'pills') renderPillsTab(area);
   else if (activeTab === 'pets') renderPetsTab(area);
   else if (activeTab === 'relics') renderRelicsTab(area);
   else if (activeTab === 'veins') renderVeinsTab(area);
@@ -1501,32 +1503,23 @@ function renderArtsTab(container) {
 }
 
 function renderTreasuresTab(container) {
-  // 只展示已解锁 + 下1件神秘剪影
-  let shownMysteryArt = false;
-  const artCards = ARTIFACTS.map(a => {
+  // 本命法宝：已解锁的按最新解锁（高阶优先）排在最上面，未解锁仅显示下 1 件神秘剪影
+  const unlockedArts = ARTIFACTS.filter(a => state.realmIdx >= a.reqRealm || state.ownedArtifacts.includes(a.id)).reverse();
+  const nextLockedArt = ARTIFACTS.find(a => !(state.realmIdx >= a.reqRealm || state.ownedArtifacts.includes(a.id)));
+
+  const artCards = unlockedArts.map((a, idx) => {
     const owned = state.ownedArtifacts.includes(a.id);
     const eq = state.artifactId === a.id;
-    const unlocked = state.realmIdx >= a.reqRealm || owned;
-    if (!unlocked) {
-      if (shownMysteryArt) return '';
-      shownMysteryArt = true;
-      return `
-        <div class="p-3.5 rounded-xl bg-xian-950/80 border border-dashed border-slate-700 flex flex-col justify-center items-center text-center gap-1 opacity-75">
-          <span class="text-xl">🌫️</span>
-          <span class="text-xs font-extrabold text-slate-300">？？？ · 未知高阶法宝</span>
-          <span class="text-[11px] text-slate-500">提升境界后于藏宝阁显现</span>
-        </div>
-      `;
-    }
+    const isNewest = idx === 0 && a.reqRealm > 0;
     const disabled = eq || (!owned && state.stones < a.cost);
     return `
-      <div class="p-3.5 rounded-xl bg-xian-850 border ${eq ? 'border-amber-400 bg-amber-500/10' : owned ? 'border-emerald-500/35' : 'border-slate-800'} flex flex-col justify-between gap-2.5">
+      <div class="p-3.5 rounded-xl bg-xian-850 border ${eq ? 'border-amber-400 bg-amber-500/10' : isNewest ? 'border-teal-400/60 shadow' : owned ? 'border-emerald-500/35' : 'border-slate-800'} flex flex-col justify-between gap-2.5">
         <div>
           <div class="flex items-center justify-between gap-2">
-            <span class="font-extrabold text-sm text-white">⚔️ ${a.name}</span>
-            <span class="px-2 py-0.5 rounded bg-xian-950 text-[11px] font-mono text-amber-300">${a.qiMult}x 修为</span>
+            <span class="font-extrabold text-sm text-white">⚔️ ${a.name}${isNewest ? ' <span class="ml-1 px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-200 text-[10px]">最新</span>' : ''}</span>
+            <span class="px-2 py-0.5 rounded bg-xian-950 text-[11px] font-mono text-amber-300">${fmt(a.qiMult)}x 修为</span>
           </div>
-          <p class="text-xs text-slate-400 mt-1">${a.stoneMult}x 灵石 • 调息 -${a.cdCut.toFixed(2)}s</p>
+          <p class="text-xs text-slate-400 mt-1">${fmt(a.stoneMult)}x 灵石 • 调息 -${a.cdCut.toFixed(2)}s</p>
         </div>
         <button data-artifact="${a.id}" ${disabled ? 'disabled' : ''} class="w-full py-2 rounded-xl font-extrabold text-xs transition active:scale-95 ${
           eq ? 'bg-amber-500/25 text-amber-200 border border-amber-400/40'
@@ -1537,39 +1530,13 @@ function renderTreasuresTab(container) {
     `;
   }).join('');
 
-  let shownMysteryPill = false;
-  const pillCards = PILLS.map(p => {
-    const qty = state.pills[p.id] || 0;
-    const eq = state.activePill === p.id;
-    const unlocked = state.realmIdx >= p.reqRealm || qty > 0;
-    if (!unlocked) {
-      if (shownMysteryPill) return '';
-      shownMysteryPill = true;
-      return `
-        <div class="p-3.5 rounded-xl bg-xian-950/80 border border-dashed border-slate-700 flex flex-col justify-center items-center text-center gap-1 opacity-75">
-          <span class="text-xl">🌫️</span>
-          <span class="text-xs font-extrabold text-slate-300">？？？ · 未知灵丹</span>
-          <span class="text-[11px] text-slate-500">境界精进后解锁丹方</span>
-        </div>
-      `;
-    }
-    const calc = calcPillBuy(p, state.stones, pillBuyMode);
-    return `
-      <div class="p-3.5 rounded-xl bg-xian-850 border ${eq ? 'border-emerald-400 bg-emerald-500/10' : 'border-slate-800'} flex flex-col justify-between gap-2.5">
-        <div>
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-extrabold text-sm text-white">💊 ${p.name}</span>
-            <span class="px-2 py-0.5 rounded bg-xian-950 text-[11px] font-mono text-emerald-300">存量: ${fmt(qty)}</span>
-          </div>
-          <p class="text-xs text-slate-400 mt-1">${p.desc}</p>
-        </div>
-        <div class="grid grid-cols-12 gap-1.5">
-          <button data-pill-buy="${p.id}" ${calc.canBuy ? '' : 'disabled'} class="col-span-8 py-2 px-2 rounded-xl text-[11px] font-extrabold bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800 text-white transition active:scale-95 truncate">${fmtPillBuyBtn(calc, pillBuyMode)}</button>
-          <button data-pill-eq="${p.id}" ${qty <= 0 ? 'disabled' : ''} class="col-span-4 py-2 px-2 rounded-xl text-[11px] font-extrabold ${eq ? 'bg-amber-400 text-slate-950' : 'bg-emerald-600 hover:bg-emerald-500 text-white'} disabled:bg-xian-950 disabled:text-slate-500 transition active:scale-95">${eq ? '服用中' : '服用'}</button>
-        </div>
-      </div>
-    `;
-  }).join('');
+  const mysteryArtCard = nextLockedArt ? `
+    <div class="p-3.5 rounded-xl bg-xian-950/80 border border-dashed border-slate-700 flex flex-col justify-center items-center text-center gap-1 opacity-75">
+      <span class="text-xl">🌫️</span>
+      <span class="text-xs font-extrabold text-slate-300">？？？ · 未知高阶法宝</span>
+      <span class="text-[11px] text-slate-500">提升境界后于藏宝阁显现</span>
+    </div>
+  ` : '';
 
   container.innerHTML = `
     <div class="space-y-5">
@@ -1585,13 +1552,11 @@ function renderTreasuresTab(container) {
       </div>
 
       <div class="space-y-2.5">
-        <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">⚔️ 本命法宝</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${artCards}</div>
-      </div>
-
-      <div class="space-y-2.5 pt-2 border-t border-slate-800">
-        ${renderPillBuyModeBar()}
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${pillCards}</div>
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">⚔️ 本命法宝（最新解锁置顶）</h4>
+          <span class="text-[11px] font-mono text-amber-300">已解锁 ${unlockedArts.length}/${ARTIFACTS.length}</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${artCards}${mysteryArtCard}</div>
       </div>
     </div>
   `;
@@ -1614,6 +1579,61 @@ function renderTreasuresTab(container) {
       renderActiveTab();
     };
   });
+}
+
+function renderPillsTab(container) {
+  // 辅助丹药：已解锁的按最新解锁（高阶优先）排在最上面，未解锁仅显示下 1 种神秘丹方
+  const unlockedPills = PILLS.filter(p => state.realmIdx >= p.reqRealm || (state.pills[p.id] || 0) > 0).reverse();
+  const nextLockedPill = PILLS.find(p => !(state.realmIdx >= p.reqRealm || (state.pills[p.id] || 0) > 0));
+  const curPill = getActivePill();
+
+  const pillCards = unlockedPills.map((p, idx) => {
+    const qty = state.pills[p.id] || 0;
+    const eq = state.activePill === p.id;
+    const isNewest = idx === 0 && p.reqRealm > 0;
+    const calc = calcPillBuy(p, state.stones, pillBuyMode);
+    return `
+      <div class="p-3.5 rounded-xl bg-xian-850 border ${eq ? 'border-emerald-400 bg-emerald-500/10' : isNewest ? 'border-teal-400/60 shadow' : 'border-slate-800'} flex flex-col justify-between gap-2.5">
+        <div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-extrabold text-sm text-white">💊 ${p.name}${isNewest ? ' <span class="ml-1 px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-200 text-[10px]">最新</span>' : ''}</span>
+            <span class="px-2 py-0.5 rounded bg-xian-950 text-[11px] font-mono text-emerald-300">存量: ${fmt(qty)}</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">${p.desc}</p>
+        </div>
+        <div class="grid grid-cols-12 gap-1.5">
+          <button data-pill-buy="${p.id}" ${calc.canBuy ? '' : 'disabled'} class="col-span-8 py-2 px-2 rounded-xl text-[11px] font-extrabold bg-teal-600 hover:bg-teal-500 disabled:bg-xian-950 disabled:text-slate-500 disabled:border disabled:border-slate-800 text-white transition active:scale-95 truncate">${fmtPillBuyBtn(calc, pillBuyMode)}</button>
+          <button data-pill-eq="${p.id}" ${qty <= 0 ? 'disabled' : ''} class="col-span-4 py-2 px-2 rounded-xl text-[11px] font-extrabold ${eq ? 'bg-amber-400 text-slate-950' : 'bg-emerald-600 hover:bg-emerald-500 text-white'} disabled:bg-xian-950 disabled:text-slate-500 transition active:scale-95">${eq ? '服用中' : '服用'}</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const mysteryPillCard = nextLockedPill ? `
+    <div class="p-3.5 rounded-xl bg-xian-950/80 border border-dashed border-slate-700 flex flex-col justify-center items-center text-center gap-1 opacity-75">
+      <span class="text-xl">🌫️</span>
+      <span class="text-xs font-extrabold text-slate-300">？？？ · 未知灵丹</span>
+      <span class="text-[11px] text-slate-500">境界精进后解锁丹方</span>
+    </div>
+  ` : '';
+
+  container.innerHTML = `
+    <div class="space-y-4">
+      <div class="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/15 to-teal-500/15 border border-emerald-400/35 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div class="font-extrabold text-sm text-emerald-200">💊 丹药阁（最新解锁置顶 · 每吐纳 1 次消耗 1 颗）</div>
+          <div class="text-xs text-slate-300 mt-0.5">当前服用：<strong class="text-amber-300">${curPill ? `${curPill.name}（剩余 ${fmt(state.pills[curPill.id])} 颗）` : '未服用丹药'}</strong></div>
+        </div>
+        <span class="text-xs font-mono text-emerald-300">已解锁 ${unlockedPills.length}/${PILLS.length} 阶丹方</span>
+      </div>
+
+      <div class="space-y-2.5">
+        ${renderPillBuyModeBar()}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${pillCards}${mysteryPillCard}</div>
+      </div>
+    </div>
+  `;
+
   container.querySelectorAll('[data-pill-mode]').forEach(btn => {
     btn.onclick = () => { pillBuyMode = btn.dataset.pillMode; renderActiveTab(); };
   });
