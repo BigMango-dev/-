@@ -32,6 +32,7 @@ const DOM = {
   cdTimer: document.getElementById('cooldown-timer-text'),
   pillShort: document.getElementById('ui-active-pill-short'),
   autoMedBtn: document.getElementById('btn-automeditate'),
+  autoBreakBtn: document.getElementById('btn-autobreak'),
   jadeGuardBtn: document.getElementById('btn-jade-guard'),
   burnStonesBtn: document.getElementById('btn-burn-stones'),
   chestCnt: document.getElementById('quick-chest-count'),
@@ -1110,6 +1111,14 @@ function flushHUD() {
     DOM.autoMedBtn.className = state.autoMeditate
       ? 'py-2 px-2 rounded-xl bg-teal-500/20 border border-teal-400/50 text-teal-300 text-[11px] font-bold transition active:scale-95'
       : 'py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-300 text-[11px] font-bold transition active:scale-95';
+  }
+
+  if (textCache.autoBreak !== state.autoBreakthrough && DOM.autoBreakBtn) {
+    textCache.autoBreak = state.autoBreakthrough;
+    DOM.autoBreakBtn.textContent = `⚡ 自动破境: ${state.autoBreakthrough ? '开' : '关'}`;
+    DOM.autoBreakBtn.className = state.autoBreakthrough
+      ? 'py-2 px-2 rounded-xl bg-amber-500/25 border border-amber-400/65 text-amber-200 text-[11px] font-extrabold truncate transition active:scale-95 shadow-[0_0_12px_rgba(251,191,36,0.3)]'
+      : 'py-2 px-2 rounded-xl bg-xian-850 hover:bg-xian-800 border border-slate-700 text-slate-300 text-[11px] font-bold truncate transition active:scale-95';
   }
 
   const guardCost = getJadeGuardCost();

@@ -329,7 +329,7 @@ function performMeditate(silent = false, batchScale = 1) {
     const critTag = isCrit ? ' <span class="feed-amber">[顿悟暴击!]</span>' : '';
     const burnTag = burnedThisTick ? ` <span class="feed-fuchsia">[燃石 -${fmt(burnSpent)}]</span>` : '';
     addLog(`${world.icon} 在<span class="feed-strong">${world.name}</span>吐纳周天${critTag}${burnTag}：<span class="feed-strong">+${fmt(qiGain)} 修为</span>，<span class="feed-amber">+${fmt(stoneGain)} 灵石</span>。`);
-    if (!wasReady && state.qi >= reqQi) {
+    if (!wasReady && state.qi >= reqQi && !state.autoBreakthrough) {
       showToast('⚡ 灵气已圆满！点击「突破境界」破关晋阶！', 'amber');
     }
   }
@@ -361,18 +361,31 @@ function performMeditate(silent = false, batchScale = 1) {
   rollRelicDrops(scale, silent, 1);
   rollPetDrops(scale, silent, 1);
 
+  // ⚡ 自动突破（涵盖小境界、大境界与渡劫飞升，支持前台与后台/离线闭关）
+  if (state.autoBreakthrough && (canBreakthrough() || canAscendNow())) {
+    let safety = 0;
+    while (state.autoBreakthrough && safety < 24 && (canBreakthrough() || canAscendNow())) {
+      safety++;
+      if (canAscendNow()) {
+        attemptAscension(true, silent);
+      } else {
+        const ok = attemptBreakthrough(true, silent);
+        if (!ok) break;
+      }
+    }
+  }
+
   hudDirty = true;
 }
 
-// 手动突破境界（含真实成功率判定、仙玉护道、心魔反噬与保底感悟）
-function attemptBreakthrough() {
+// 突破境界（支持手动点击与自动突破大/小境界；含真实成功率判定、仙玉护道、心魔反噬与保底感悟）
+function attemptBreakthrough(isAuto = false, silent = false) {
   if (canAscendNow()) {
-    attemptAscension();
-    return;
+    return attemptAscension(isAuto, silent);
   }
   if (!canBreakthrough()) {
-    showToast('修为尚未圆满，请继续打坐吐纳。', 'amber');
-    return;
+    if (!isAuto && !silent) showToast('修为尚未圆满，请继续打坐吐纳。', 'amber');
+    return false;
   }
 
   const req = getQiRequired();
@@ -382,12 +395,12 @@ function attemptBreakthrough() {
     if (state.jade >= guardCost) {
       state.jade -= guardCost;
       usedGuard = true;
-    } else {
+    } else if (!isAuto && !silent) {
       showToast(`仙玉不足 ${fmt(guardCost)}，本次破境未触发护道！`, 'amber');
     }
   }
 
-  // 先用含本次护道状态的成功率判定（由于刚扣除了仙玉，若 usedGuard 为 true 需补回护道加成）
+  // 用含本次护道状态的成功率判定
   const rCur = getRealm();
   let chance = rCur.baseRate ?? 1.0;
   if (state.subIdx === 3 && !isAtMortalPeak()) {
@@ -407,32 +420,40 @@ function attemptBreakthrough() {
     state.qi = Math.max(0, state.qi - lostQi);
     state.btPity = Math.min(1.0, (state.btPity || 0) + pityGain);
 
-    playBreakthroughSound('fail');
-    showBreakthroughAnimation({
-      type: 'fail',
-      kicker: state.realmIdx >= 9 ? '九霄仙劫反噬 · 破境受阻' : '心魔扰动 · 冲击瓶颈失败',
-      icon: '🌩️',
-      title: '破境失败 · 灵气溃散',
-      subtitle: usedGuard
-        ? '幸得仙玉护道抵消半数反噬！虽未破关，但道心愈发凝练。'
-        : '境界壁垒坚如磐石，强行冲关遭致反噬，建议积攒仙玉开启「护道」或觉醒圣体！',
-      rewards: [
-        `修为损耗 -${Math.round(lossRatio * 100)}% (-${fmt(lostQi)})`,
-        `道心感悟 +${Math.round(pityGain * 100)}% 成功率`,
-        `当前保底：+${Math.round(state.btPity * 100)}%`
-      ]
-    });
+    if (!silent) {
+      if (!isAuto) {
+        playBreakthroughSound('fail');
+        showBreakthroughAnimation({
+          type: 'fail',
+          kicker: state.realmIdx >= 9 ? '九霄仙劫反噬 · 破境受阻' : '心魔扰动 · 冲击瓶颈失败',
+          icon: '🌩️',
+          title: '破境失败 · 灵气溃散',
+          subtitle: usedGuard
+            ? '幸得仙玉护道抵消半数反噬！虽未破关，但道心愈发凝练。'
+            : '境界壁垒坚如磐石，强行冲关遭致反噬，建议积攒仙玉开启「护道」或觉醒圣体！',
+          rewards: [
+            `修为损耗 -${Math.round(lossRatio * 100)}% (-${fmt(lostQi)})`,
+            `道心感悟 +${Math.round(pityGain * 100)}% 成功率`,
+            `当前保底：+${Math.round(state.btPity * 100)}%`
+          ]
+        });
+      } else {
+        showToast(`🌩️ 自动冲关失败，道心保底 +${Math.round(pityGain * 100)}%`, 'rose');
+      }
 
-    addLog(
-      `🌩️ <span class="feed-strong">冲击「${getNextRealmLabel()}」失败</span>（成功率 ${(chance * 100).toFixed(1)}%）：灵气溃散 <span class="feed-amber">-${fmt(lostQi)}</span>，道心愈坚，下次破境成功率 <span class="feed-emerald">+${Math.round(pityGain * 100)}%</span>！`,
-      'break'
-    );
+      addLog(
+        `🌩️ <span class="feed-strong">${isAuto ? '[自动] ' : ''}冲击「${getNextRealmLabel()}」失败</span>（成功率 ${(chance * 100).toFixed(1)}%）：灵气溃散 <span class="feed-amber">-${fmt(lostQi)}</span>，道心愈坚，下次破境成功率 <span class="feed-emerald">+${Math.round(pityGain * 100)}%</span>！`,
+        'break'
+      );
 
-    saveGame(false);
-    hudDirty = true;
-    flushHUD();
-    renderActiveTab();
-    return;
+      saveGame(false);
+      hudDirty = true;
+      flushHUD();
+      renderActiveTab();
+    } else {
+      hudDirty = true;
+    }
+    return false;
   }
 
   // 破境成功！清空当前瓶颈保底
@@ -462,40 +483,50 @@ function attemptBreakthrough() {
   state.jade += jadeReward;
   state.stones += stoneBonus;
 
-  const rewards = [
-    `+${fmt(jadeReward)} 💎 仙玉`,
-    `+${fmt(stoneBonus)} 🪙 灵石`,
-    `寿元：${r.lifespan}`
-  ];
-  if (unlockedArtName) rewards.push(`领悟新功法：《${unlockedArtName}》`);
+  if (!silent) {
+    const rewards = [
+      `+${fmt(jadeReward)} 💎 仙玉`,
+      `+${fmt(stoneBonus)} 🪙 灵石`,
+      `寿元：${r.lifespan}`
+    ];
+    if (unlockedArtName) rewards.push(`领悟新功法：《${unlockedArtName}》`);
 
-  playBreakthroughSound(isMajor ? 'major' : 'minor');
-  showBreakthroughAnimation({
-    type: isMajor ? 'major' : 'minor',
-    kicker: isMajor ? '紫气东来 · 法相蜕变 · 大道破境' : '气海圆满 · 境界精进',
-    icon: isMajor ? '🌟' : '⚡',
-    customSvg: typeof getCultivatorAvatarSVG === 'function' ? getCultivatorAvatarSVG(state.realmIdx, 102, state.subIdx) : null,
-    title: fullRealmName,
-    subtitle: r.desc,
-    rewards
-  });
+    // 手动破境全部播动画；自动破境仅在【突破大境界】时播放震撼全屏动画，小境界用提示避免频繁遮挡
+    if (!isAuto || isMajor) {
+      playBreakthroughSound(isMajor ? 'major' : 'minor');
+      showBreakthroughAnimation({
+        type: isMajor ? 'major' : 'minor',
+        kicker: isMajor ? '紫气东来 · 法相蜕变 · 大道破境' : '气海圆满 · 境界精进',
+        icon: isMajor ? '🌟' : '⚡',
+        customSvg: typeof getCultivatorAvatarSVG === 'function' ? getCultivatorAvatarSVG(state.realmIdx, 102, state.subIdx) : null,
+        title: fullRealmName,
+        subtitle: r.desc,
+        rewards
+      });
+    } else {
+      showToast(`⚡ 自动破境成功：${fullRealmName} (+${fmt(jadeReward)}💎)`, 'amber');
+    }
 
-  addLog(
-    `${isMajor ? '🌟 <span class="feed-fuchsia">大境界突破！</span>' : '⚡ <span class="feed-amber">破境成功！</span>'}踏入 <span class="feed-strong">${fullRealmName}</span>，获 <span class="feed-emerald">+${fmt(jadeReward)} 仙玉</span>${unlockedArtName ? `，领悟 <span class="feed-amber">《${unlockedArtName}》</span>` : ''}！`,
-    isMajor ? 'major' : 'break'
-  );
+    addLog(
+      `${isMajor ? '🌟 <span class="feed-fuchsia">' + (isAuto ? '[自动] ' : '') + '大境界突破！</span>' : '⚡ <span class="feed-amber">' + (isAuto ? '[自动] ' : '') + '破境成功！</span>'}踏入 <span class="feed-strong">${fullRealmName}</span>，获 <span class="feed-emerald">+${fmt(jadeReward)} 仙玉</span>${unlockedArtName ? `，领悟 <span class="feed-amber">《${unlockedArtName}》</span>` : ''}！`,
+      isMajor ? 'major' : 'break'
+    );
 
-  saveGame(false);
-  hudDirty = true;
-  flushHUD();
-  renderActiveTab();
+    saveGame(false);
+    hudDirty = true;
+    flushHUD();
+    renderActiveTab();
+  } else {
+    hudDirty = true;
+  }
+  return true;
 }
 
-// 渡劫飞升仙界
-function attemptAscension() {
+// 渡劫飞升仙界（同样支持自动突破触发）
+function attemptAscension(isAuto = false, silent = false) {
   if (!canAscendNow()) {
-    showToast('需达到「渡劫期 · 大圆满」且修为圆满方可渡劫飞升！', 'amber');
-    return;
+    if (!isAuto && !silent) showToast('需达到「渡劫期 · 大圆满」且修为圆满方可渡劫飞升！', 'amber');
+    return false;
   }
   const req = getQiRequired();
   state.qi = Math.max(0, state.qi - req);
@@ -509,22 +540,27 @@ function attemptAscension() {
   const jadeReward = Math.round(35 * getJadeMultiplier());
   state.jade += jadeReward;
 
-  playBreakthroughSound('ascend');
-  showBreakthroughAnimation({
-    type: 'ascend',
-    kicker: '九重天劫已过 · 褪凡成仙',
-    icon: '⛩️',
-    customSvg: typeof getCultivatorAvatarSVG === 'function' ? getCultivatorAvatarSVG(9, 108, 0) : null,
-    title: '白日飞升 · 步入人仙',
-    subtitle: '褪去凡胎，初凝仙元！解锁仙界六大圣域，永久获得 +50% 仙灵修为与 +60% 灵石转化！',
-    rewards: [`+${fmt(jadeReward)} 💎 仙玉`, '解锁仙界十二重天', '解锁蓬莱仙域', '领悟《长生人仙诀》']
-  });
+  if (!silent) {
+    playBreakthroughSound('ascend');
+    showBreakthroughAnimation({
+      type: 'ascend',
+      kicker: '九重天劫已过 · 褪凡成仙',
+      icon: '⛩️',
+      customSvg: typeof getCultivatorAvatarSVG === 'function' ? getCultivatorAvatarSVG(9, 108, 0) : null,
+      title: '白日飞升 · 步入人仙',
+      subtitle: '褪去凡胎，初凝仙元！解锁仙界六大圣域，永久获得 +50% 仙灵修为与 +60% 灵石转化！',
+      rewards: [`+${fmt(jadeReward)} 💎 仙玉`, '解锁仙界十二重天', '解锁蓬莱仙域', '领悟《长生人仙诀》']
+    });
 
-  addLog(`⛩️ <span class="feed-fuchsia">白日飞升仙界！</span>渡过九重天劫，踏入 <span class="feed-strong">人仙 · 初期</span>，降临蓬莱仙域！`, 'major');
-  saveGame(false);
-  hudDirty = true;
-  flushHUD();
-  renderActiveTab();
+    addLog(`⛩️ <span class="feed-fuchsia">${isAuto ? '[自动] ' : ''}白日飞升仙界！</span>渡过九重天劫，踏入 <span class="feed-strong">人仙 · 初期</span>，降临蓬莱仙域！`, 'major');
+    saveGame(false);
+    hudDirty = true;
+    flushHUD();
+    renderActiveTab();
+  } else {
+    hudDirty = true;
+  }
+  return true;
 }
 
 // 重生轮回（Prestige）

@@ -46,6 +46,7 @@ function defaultState() {
     btPity: 0,          // 当前瓶颈破境感悟保底（失败累积，成功后清零）
     useJadeGuard: false,// 是否启用仙玉护道
     autoMeditate: false,
+    autoBreakthrough: false,
     hideMaxedArts: false,
     sfxEnabled: true,
     lastActiveAt: Date.now()
@@ -109,6 +110,7 @@ function mergeState(parsed) {
     karmaPerks: sanitizeMap(p.karmaPerks, def.karmaPerks),
     btPity: safeNum(p.btPity, 0, 0),
     useJadeGuard: Boolean(p.useJadeGuard),
+    autoBreakthrough: Boolean(p.autoBreakthrough),
     pills: sanitizeMap(p.pills, Object.fromEntries(PILLS.map(x => [x.id, x.id === 'p_qi' ? 5 : 0]))),
     lastActiveAt: safeNum(p.lastActiveAt, Date.now(), 0)
   };

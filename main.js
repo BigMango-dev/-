@@ -26,7 +26,7 @@ let hiddenSnap = null;
 let bgWorker = null;
 
 function captureSnap() {
-  return { stones: state.stones, qi: state.qi, chests: state.chests, ticks: state.totalTicks };
+  return { stones: state.stones, qi: state.qi, chests: state.chests, ticks: state.totalTicks, realmIdx: state.realmIdx, subIdx: state.subIdx };
 }
 
 function fmtDur(sec) {
@@ -77,6 +77,11 @@ function postAwaySummary(elapsedSec, before, label = '后台闭关') {
   if (dTicks > 0) parts.push(`<span class="feed-strong">+${fmt(dTicks)} 次吐纳</span>`);
   if (dStones > 0) parts.push(`<span class="feed-amber">+${fmt(dStones)} 灵石</span>`);
   if (dChests > 0) parts.push(`<span class="feed-emerald">+${dChests} 机缘秘宝</span>`);
+  if (state.realmIdx > before.realmIdx || (state.realmIdx === before.realmIdx && state.subIdx > before.subIdx)) {
+    const rNow = getRealm();
+    const shortR = rNow.name.length > 10 ? '创世大天尊境' : rNow.name;
+    parts.push(`<span class="feed-fuchsia">自动破境至 ${shortR}·${SUB_REALMS[state.subIdx]}</span>`);
+  }
   addLog(`🌙 <span class="feed-strong">${label} (${fmtDur(elapsedSec)})：</span>${parts.join(' • ')}`, 'break');
   showToast(`🌙 ${label} ${fmtDur(elapsedSec)} 结算完成！`, 'cyan');
 }
@@ -220,9 +225,9 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
 
 DOM.medBtn.onclick = attemptManualMeditate;
 DOM.dockMedBtn.onclick = attemptManualMeditate;
-DOM.btTopBtn.onclick = attemptBreakthrough;
-DOM.btCardBtn.onclick = attemptBreakthrough;
-DOM.dockBreakBtn.onclick = attemptBreakthrough;
+DOM.btTopBtn.onclick = () => attemptBreakthrough(false, false);
+DOM.btCardBtn.onclick = () => attemptBreakthrough(false, false);
+DOM.dockBreakBtn.onclick = () => attemptBreakthrough(false, false);
 
 document.getElementById('btn-cycle-pill').onclick = cyclePill;
 document.getElementById('dock-cycle-pill').onclick = cyclePill;
@@ -233,6 +238,25 @@ DOM.autoMedBtn.onclick = () => {
   hudDirty = true;
   flushHUD();
 };
+if (DOM.autoBreakBtn) {
+  DOM.autoBreakBtn.onclick = () => {
+    state.autoBreakthrough = !state.autoBreakthrough;
+    hudDirty = true;
+    flushHUD();
+    showToast(state.autoBreakthrough
+      ? '⚡ 已开启自动破境（涵盖小境界、大境界与渡劫飞升）！'
+      : '已关闭自动破境（恢复手动突破）', state.autoBreakthrough ? 'amber' : 'cyan');
+    if (state.autoBreakthrough && (canBreakthrough() || canAscendNow())) {
+      let safety = 0;
+      while (state.autoBreakthrough && safety < 24 && (canBreakthrough() || canAscendNow())) {
+        safety++;
+        if (canAscendNow()) attemptAscension(true, false);
+        else if (!attemptBreakthrough(true, false)) break;
+      }
+    }
+    saveGame(false);
+  };
+}
 if (DOM.jadeGuardBtn) {
   DOM.jadeGuardBtn.onclick = () => {
     state.useJadeGuard = !state.useJadeGuard;
