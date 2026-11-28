@@ -573,8 +573,12 @@ function getKarmaOnReincarnate() {
   if (state.realmIdx < 4) return 0; // 化神期起可轮回
   const pb = getPhysiqueBonuses();
   const relB = getRelicBonuses();
-  const base = Math.floor(1 + Math.pow(state.realmIdx - 3, 1.55) + state.subIdx * 0.4 + (state.ascended ? 4 : 0));
-  return Math.max(1, Math.floor(base * (1 + pb.karma + relB.karmaAdd) * pb.karmaMult));
+  const ascMult = state.ascended ? 1.5 : 1.0;
+  const subMult = 1 + state.subIdx * 0.25;
+  const rawBase = 5 * Math.pow(1.92, state.realmIdx - 4) * subMult * ascMult;
+  const base = Math.floor(Math.min(1e280, Number.isFinite(rawBase) ? rawBase : 1e280));
+  const total = base * (1 + pb.karma + relB.karmaAdd) * pb.karmaMult;
+  return Math.max(1, Math.floor(Math.min(1e300, Number.isFinite(total) ? total : 1e300)));
 }
 
 function getNextRealmLabel() {
