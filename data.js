@@ -50,7 +50,8 @@ const PHYSIQUES = [
     baseKarma: 4, baseJade: 80,
     stoneBonus: 1.20, jadeBonus: 1.50, karmaBonus: 0.45, qiBonus: 0.55,
     realmGrowth: 1.12, luckBase: 0.25, luckPerRealm: 0.06,
-    desc: '天生七窍通明，洞察天机。所有加成随大境界提升自动共鸣变强（每大境 ×1.12），大幅增强仙玉与寻宝气运！',
+    btBase: 0.005,
+    desc: '天生七窍通明，洞察天机。所有加成随大境界提升自动共鸣变强（每大境 ×1.12），大幅增强仙玉与寻宝气运，并小幅提升破境成功率 +0.5%！',
     art: { id: 'pa_heart', name: '玲珑天心诀', baseCost: 15, scale: 1.55, maxLv: 20, currency: 'jade', stonePerLv: 0.18, qiPerLv: 0.14, desc: '每级 +18% 灵石产出、+14% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
@@ -58,7 +59,8 @@ const PHYSIQUES = [
     baseKarma: 6, baseJade: 120,
     stoneBonus: 2.20, jadeBonus: 0.80, karmaBonus: 0.50, qiBonus: 0.75,
     realmGrowth: 1.13, critPerRealm: 0.004, critCap: 0.12,
-    desc: '以战养道，掠夺八荒灵脉。加成随大境界自动变强（每大境 ×1.13），顿悟暴击率跃升至 22% 并随境界持续精进！',
+    btBase: 0.005,
+    desc: '以战养道，掠夺八荒灵脉。加成随大境界自动变强（每大境 ×1.13），顿悟暴击率跃升至 22% 并随境界精进，破境成功率 +0.5%！',
     art: { id: 'pa_blood', name: '修罗血神经', baseCost: 20, scale: 1.55, maxLv: 20, currency: 'jade', stonePerLv: 0.26, qiPerLv: 0.16, desc: '每级 +26% 灵石产出、+16% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
@@ -66,7 +68,8 @@ const PHYSIQUES = [
     baseKarma: 9, baseJade: 180,
     stoneBonus: 2.00, jadeBonus: 1.40, karmaBonus: 0.75, qiBonus: 0.90,
     realmGrowth: 1.14,
-    desc: '胸生至尊宝骨，铭刻上古劫光宝术。全资源随大境界自动暴涨（每大境 ×1.14），轮回道果收益剧增！',
+    btBase: 0.008,
+    desc: '胸生至尊宝骨，铭刻上古劫光宝术。全资源随大境界自动暴涨（每大境 ×1.14），破境成功率 +0.8%！',
     art: { id: 'pa_bone', name: '至尊劫光经', baseCost: 25, scale: 1.58, maxLv: 20, currency: 'jade', stonePerLv: 0.24, qiPerLv: 0.18, desc: '每级 +24% 灵石产出、+18% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
@@ -74,15 +77,16 @@ const PHYSIQUES = [
     baseKarma: 12, baseJade: 240,
     stoneBonus: 2.10, jadeBonus: 2.40, karmaBonus: 0.85, qiBonus: 1.05,
     realmGrowth: 1.15, luckBase: 0.35, luckPerRealm: 0.08,
-    desc: '重瞳本是无敌路，一眼勘破虚妄洞府！加成随大境界自动变强（每大境 ×1.15），仙玉与寻宝气运呈倍暴增！',
+    btBase: 0.008,
+    desc: '重瞳本是无敌路，一眼勘破虚妄洞府！加成随大境界自动变强（每大境 ×1.15），仙玉与气运暴增，破境成功率 +0.8%！',
     art: { id: 'pa_eye', name: '重瞳开天诀', baseCost: 32, scale: 1.58, maxLv: 20, currency: 'jade', stonePerLv: 0.26, qiPerLv: 0.20, desc: '每级 +26% 灵石产出、+20% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
     id: 'ph_dao', name: '先天道胎', icon: '☯️', tierTag: '近道圣躯',
     baseKarma: 16, baseJade: 320,
     stoneBonus: 2.60, jadeBonus: 1.80, karmaBonus: 1.00, qiBonus: 1.40,
-    realmGrowth: 1.16, btBase: 0.04, btPerRealm: 0.002, btCap: 0.10, cdCut: 0.20,
-    desc: '先天近道之躯，天然契合天地法则！加成随大境界自动变强（每大境 ×1.16），永久缩减调息 -0.20s 并随境界提升破境成功率！',
+    realmGrowth: 1.16, btBase: 0.012, cdCut: 0.20,
+    desc: '先天近道之躯，天然契合天地法则！加成随大境界自动变强（每大境 ×1.16），永久缩减调息 -0.20s，破境成功率 +1.2%！',
     art: { id: 'pa_dao', name: '先天大道经', baseCost: 40, scale: 1.60, maxLv: 20, currency: 'jade', stonePerLv: 0.30, qiPerLv: 0.24, desc: '每级 +30% 灵石产出、+24% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
   {
@@ -90,60 +94,61 @@ const PHYSIQUES = [
     baseKarma: 22, baseJade: 450,
     stoneBonus: 4.20, jadeBonus: 1.80, karmaBonus: 1.20, qiBonus: 1.50,
     realmGrowth: 1.18,
-    desc: '黄金气血冲霄，大成圣体可叫板古之大帝！加成随大境界狂飙（每大境 ×1.18），灵石与修为爆发傲视基础圣体！',
+    btBase: 0.012,
+    desc: '黄金气血冲霄，大成圣体可叫板古之大帝！加成随大境界狂飙（每大境 ×1.18），破境成功率 +1.2%！',
     art: { id: 'pa_ancient', name: '荒古镇世诀', baseCost: 50, scale: 1.60, maxLv: 20, currency: 'jade', stonePerLv: 0.42, qiPerLv: 0.25, desc: '每级 +42% 灵石产出、+25% 修为感悟（随大境界增幅，消耗仙玉）。' }
   },
-  // ==================== 三大至高终极圣体（史诗级加强：独立乘区 + 随大境界指数狂飙 + 逆天专属特性！） ====================
+  // ==================== 三大至高终极圣体（超史诗级加强：恐怖独立乘区 + 稀有破境率核心来源！） ====================
   {
     id: 'ph_eternal', name: '永恒仙体', icon: '🌟', tierTag: '至高仙体 · 阶一',
     isSupreme: true,
     baseKarma: 30, baseJade: 650,
-    stoneBonus: 20.00, jadeBonus: 15.00, karmaBonus: 6.00, qiBonus: 10.00,
-    realmGrowth: 1.20,
-    qiMultBase: 2.5, qiMultGrowth: 1.18,
-    stoneMultBase: 2.5, stoneMultGrowth: 1.18,
-    jadeMultBase: 2.0, jadeMultPerRealm: 0.25,
-    karmaMultBase: 1.8, karmaMultPerRealm: 0.15,
-    btBase: 0.10, btPerRealm: 0.005, btCap: 0.22,
-    luckBase: 1.00, luckPerRealm: 0.20,
-    petExpMultBase: 1.5, petExpPerRealm: 0.10,
-    desc: '【史诗级加强 · 独立乘区】仙辉永驻，万劫不灭！独立修为/灵石乘区起步 2.5x 且每突破一大境再 ×1.18；仙玉、道果、灵宠经验、气运与破境率同步随境界暴涨！',
-    art: { id: 'pa_eternal', name: '永恒不朽经', baseCost: 65, scale: 1.62, maxLv: 25, currency: 'jade', stonePerLv: 1.50, qiPerLv: 1.00, desc: '每级 +150% 灵石产出、+100% 修为感悟（随大境界大幅增幅，消耗仙玉）。' }
+    stoneBonus: 60.00, jadeBonus: 45.00, karmaBonus: 18.00, qiBonus: 35.00,
+    realmGrowth: 1.25,
+    qiMultBase: 6.0, qiMultGrowth: 1.24,
+    stoneMultBase: 6.0, stoneMultGrowth: 1.24,
+    jadeMultBase: 4.0, jadeMultPerRealm: 0.60,
+    karmaMultBase: 3.0, karmaMultPerRealm: 0.35,
+    btBase: 0.030,
+    luckBase: 2.00, luckPerRealm: 0.40,
+    petExpMultBase: 2.5, petExpPerRealm: 0.25,
+    desc: '【超史诗级加强 · 独立乘区】仙辉永驻，万劫不灭！独立修为/灵石乘区起步 6.0x 且每大境 ×1.24；仙玉、道果、灵宠经验与气运恐怖飙升，并永久提供珍贵 +3.0% 破境成功率！',
+    art: { id: 'pa_eternal', name: '永恒不朽经', baseCost: 65, scale: 1.62, maxLv: 25, currency: 'jade', stonePerLv: 3.00, qiPerLv: 2.20, desc: '每级 +300% 灵石产出、+220% 修为感悟（随大境界大幅增幅，消耗仙玉）。' }
   },
   {
     id: 'ph_chaos', name: '混沌神体', icon: '🌌', tierTag: '太初神体 · 阶二',
     isSupreme: true,
     baseKarma: 45, baseJade: 950,
-    stoneBonus: 50.00, jadeBonus: 30.00, karmaBonus: 12.00, qiBonus: 25.00,
-    realmGrowth: 1.24,
-    qiMultBase: 4.0, qiMultGrowth: 1.22,
-    stoneMultBase: 4.0, stoneMultGrowth: 1.22,
-    jadeMultBase: 3.0, jadeMultPerRealm: 0.45,
-    karmaMultBase: 2.5, karmaMultPerRealm: 0.25,
-    btBase: 0.14, btPerRealm: 0.006, btCap: 0.28,
-    critBase: 0.12, critMultBase: 1.2, critMultPerRealm: 0.15,
-    luckBase: 1.80, luckPerRealm: 0.35,
-    petExpMultBase: 2.0, petExpPerRealm: 0.15,
-    desc: '【史诗级加强 · 独立乘区】身融混沌海，吞吐诸天星河！独立修为/灵石乘区起步 4.0x 且每大境 ×1.22；自带高额顿悟暴击与暴伤成长，破境、仙玉、道果与灵宠经验全面飞升！',
-    art: { id: 'pa_chaos', name: '混沌神诀', baseCost: 85, scale: 1.62, maxLv: 25, currency: 'jade', stonePerLv: 2.80, qiPerLv: 2.00, desc: '混沌神体专属至高神诀，每级 +280% 灵石、+200% 修为（随大境界大幅增幅）。' }
+    stoneBonus: 180.00, jadeBonus: 110.00, karmaBonus: 45.00, qiBonus: 100.00,
+    realmGrowth: 1.30,
+    qiMultBase: 12.0, qiMultGrowth: 1.30,
+    stoneMultBase: 12.0, stoneMultGrowth: 1.30,
+    jadeMultBase: 7.5, jadeMultPerRealm: 1.20,
+    karmaMultBase: 5.5, karmaMultPerRealm: 0.65,
+    btBase: 0.050,
+    critBase: 0.18, critMultBase: 2.5, critMultPerRealm: 0.35,
+    luckBase: 4.00, luckPerRealm: 0.80,
+    petExpMultBase: 4.0, petExpPerRealm: 0.40,
+    desc: '【超史诗级加强 · 独立乘区】身融混沌海，吞吐诸天星河！独立修为/灵石乘区起步 12.0x 且每大境 ×1.30；暴击暴伤、仙玉、道果与灵宠经验逆天飞升，并永久提供 +5.0% 破境成功率！',
+    art: { id: 'pa_chaos', name: '混沌神诀', baseCost: 85, scale: 1.62, maxLv: 25, currency: 'jade', stonePerLv: 6.50, qiPerLv: 5.00, desc: '混沌神体专属至高神诀，每级 +650% 灵石、+500% 修为（随大境界大幅增幅）。' }
   },
   {
     id: 'ph_hongmeng', name: '鸿蒙至尊体', icon: '👑', tierTag: '万界第一 · 终极',
     isSupreme: true,
     baseKarma: 70, baseJade: 1500,
-    stoneBonus: 120.00, jadeBonus: 60.00, karmaBonus: 25.00, qiBonus: 60.00,
-    realmGrowth: 1.28,
-    qiMultBase: 8.0, qiMultGrowth: 1.26,
-    stoneMultBase: 8.0, stoneMultGrowth: 1.26,
-    jadeMultBase: 5.0, jadeMultPerRealm: 0.80,
-    karmaMultBase: 4.0, karmaMultPerRealm: 0.40,
-    btBase: 0.20, btPerRealm: 0.008, btCap: 0.38,
-    critBase: 0.18, critMultBase: 2.0, critMultPerRealm: 0.25,
-    cdCut: 0.18,
-    luckBase: 3.00, luckPerRealm: 0.60,
-    petExpMultBase: 3.0, petExpPerRealm: 0.25,
-    desc: '【终极史诗 · 万界第一独立乘区】开天辟地第一无上圣体！独立修为/灵石乘区起步 8.0x 且每大境 ×1.26，永久缩减调息 -0.18s，破境、暴击、仙玉、道果、气运与灵宠经验全维度统治诸天！',
-    art: { id: 'pa_hongmeng', name: '鸿蒙造化经', baseCost: 110, scale: 1.65, maxLv: 30, currency: 'jade', stonePerLv: 5.00, qiPerLv: 3.50, desc: '鸿蒙至尊体专属无上圣法，每级 +500% 灵石、+350% 修为（随大境界大幅增幅）。' }
+    stoneBonus: 500.00, jadeBonus: 260.00, karmaBonus: 120.00, qiBonus: 300.00,
+    realmGrowth: 1.36,
+    qiMultBase: 28.0, qiMultGrowth: 1.36,
+    stoneMultBase: 28.0, stoneMultGrowth: 1.36,
+    jadeMultBase: 15.0, jadeMultPerRealm: 2.50,
+    karmaMultBase: 10.0, karmaMultPerRealm: 1.20,
+    btBase: 0.080,
+    critBase: 0.25, critMultBase: 4.5, critMultPerRealm: 0.60,
+    cdCut: 0.25,
+    luckBase: 8.00, luckPerRealm: 1.50,
+    petExpMultBase: 7.0, petExpPerRealm: 0.70,
+    desc: '【终极神话 · 万界第一独立乘区】开天辟地第一无上圣体！独立修为/灵石乘区起步 28.0x 且每大境 ×1.36，永久缩减调息 -0.25s，全资源统治诸天，并永久提供 +8.0% 破境成功率！',
+    art: { id: 'pa_hongmeng', name: '鸿蒙造化经', baseCost: 110, scale: 1.65, maxLv: 30, currency: 'jade', stonePerLv: 14.00, qiPerLv: 11.00, desc: '鸿蒙至尊体专属无上圣法，每级 +1400% 灵石、+1100% 修为（随大境界大幅增幅）。' }
   }
 ];
 
@@ -229,21 +234,21 @@ const PET_TIERS = [
 
 const SPIRIT_PETS = [
   // 灵兽
-  { id: 'pet_fox',      tierId: 'lingshou',  tier: '灵兽',     name: '青丘灵狐', icon: '🦊', qiPerLv: 0.04, stonePerLv: 0.08, jadePerLv: 0.04, luckPerLv: 0.06, critAdd: 0,     btAdd: 0,     cdCut: 0,    desc: '通灵白狐，嗅觉敏锐，最擅寻觅遗落法器与灵石矿脉。' },
-  { id: 'pet_lion',     tierId: 'lingshou',  tier: '灵兽',     name: '烈焰金狮', icon: '🦁', qiPerLv: 0.08, stonePerLv: 0.07, jadePerLv: 0.02, luckPerLv: 0.03, critAdd: 0.01,  btAdd: 0,     cdCut: 0,    desc: '身披阳火的威猛妖兽，咆哮间可震散灵气杂质，加速修为吐纳。' },
-  { id: 'pet_jiaolong', tierId: 'lingshou',  tier: '灵兽',     name: '碧水蛟龙', icon: '🐍', qiPerLv: 0.10, stonePerLv: 0.09, jadePerLv: 0.07, luckPerLv: 0.05, critAdd: 0,     btAdd: 0.005, cdCut: 0,    desc: '潜渊化蛟，身怀一丝真龙血脉，聚水行灵气滋养丹田。' },
+  { id: 'pet_fox',      tierId: 'lingshou',  tier: '灵兽',     name: '青丘灵狐', icon: '🦊', qiPerLv: 0.04, stonePerLv: 0.08, jadePerLv: 0.04, luckPerLv: 0.06, critAdd: 0,     cdCut: 0,    desc: '通灵白狐，嗅觉敏锐，最擅寻觅遗落法器与灵石矿脉。' },
+  { id: 'pet_lion',     tierId: 'lingshou',  tier: '灵兽',     name: '烈焰金狮', icon: '🦁', qiPerLv: 0.08, stonePerLv: 0.07, jadePerLv: 0.02, luckPerLv: 0.03, critAdd: 0.01,  cdCut: 0,    desc: '身披阳火的威猛妖兽，咆哮间可震散灵气杂质，加速修为吐纳。' },
+  { id: 'pet_jiaolong', tierId: 'lingshou',  tier: '灵兽',     name: '碧水蛟龙', icon: '🐍', qiPerLv: 0.10, stonePerLv: 0.09, jadePerLv: 0.07, luckPerLv: 0.05, critAdd: 0,     cdCut: 0,    desc: '潜渊化蛟，身怀一丝真龙血脉，聚水行灵气滋养丹田。' },
   // 四象圣兽
-  { id: 'pet_xuangui',  tierId: 'sixiang',   tier: '四象圣兽', name: '北方玄龟', icon: '🐢', qiPerLv: 0.09, stonePerLv: 0.14, jadePerLv: 0.08, luckPerLv: 0.07, critAdd: 0,     btAdd: 0.015, cdCut: 0,    desc: '玄武圣兽，负碑镇海，护佑道心稳固，额外提升破境成功率。' },
-  { id: 'pet_baihu',    tierId: 'sixiang',   tier: '四象圣兽', name: '西方白虎', icon: '🐯', qiPerLv: 0.14, stonePerLv: 0.12, jadePerLv: 0.06, luckPerLv: 0.06, critAdd: 0.03,  btAdd: 0.01,  cdCut: 0,    desc: '主掌庚金杀伐，助修士斩破心魔，显著提升顿悟暴击率。' },
-  { id: 'pet_zhuque',   tierId: 'sixiang',   tier: '四象圣兽', name: '南方朱雀', icon: '🐦‍🔥', qiPerLv: 0.16, stonePerLv: 0.14, jadePerLv: 0.15, luckPerLv: 0.08, critAdd: 0.015, btAdd: 0.015, cdCut: 0,    desc: '浴火重生的离火圣禽，仙焰淬炼神魂，大幅提升修为与仙玉。' },
-  { id: 'pet_qinglong', tierId: 'sixiang',   tier: '四象圣兽', name: '东方青龙', icon: '🐉', qiPerLv: 0.20, stonePerLv: 0.18, jadePerLv: 0.16, luckPerLv: 0.12, critAdd: 0.01,  btAdd: 0.02,  cdCut: 0.03, desc: '青龙行云布雨，生机盎然，全面强化修为、灵石、仙玉与寻宝气运！' },
+  { id: 'pet_xuangui',  tierId: 'sixiang',   tier: '四象圣兽', name: '北方玄龟', icon: '🐢', qiPerLv: 0.10, stonePerLv: 0.16, jadePerLv: 0.09, luckPerLv: 0.07, critAdd: 0,     cdCut: 0,    desc: '玄武圣兽，负碑镇海，稳固灵脉根基，大幅提升灵石与仙玉产出。' },
+  { id: 'pet_baihu',    tierId: 'sixiang',   tier: '四象圣兽', name: '西方白虎', icon: '🐯', qiPerLv: 0.14, stonePerLv: 0.12, jadePerLv: 0.06, luckPerLv: 0.06, critAdd: 0.03,  cdCut: 0,    desc: '主掌庚金杀伐，助修士斩破心魔，显著提升顿悟暴击率。' },
+  { id: 'pet_zhuque',   tierId: 'sixiang',   tier: '四象圣兽', name: '南方朱雀', icon: '🐦‍🔥', qiPerLv: 0.16, stonePerLv: 0.14, jadePerLv: 0.15, luckPerLv: 0.08, critAdd: 0.015, cdCut: 0,    desc: '浴火重生的离火圣禽，仙焰淬炼神魂，大幅提升修为与仙玉。' },
+  { id: 'pet_qinglong', tierId: 'sixiang',   tier: '四象圣兽', name: '东方青龙', icon: '🐉', qiPerLv: 0.20, stonePerLv: 0.18, jadePerLv: 0.16, luckPerLv: 0.12, critAdd: 0.01,  cdCut: 0.03, desc: '青龙行云布雨，生机盎然，全面强化修为、灵石、仙玉与寻宝气运！' },
   // 上古瑞兽 / 凶兽
-  { id: 'pet_ninefox',  tierId: 'ruishou',   tier: '上古瑞兽', name: '九尾天狐', icon: '🦊', qiPerLv: 0.15, stonePerLv: 0.16, jadePerLv: 0.24, luckPerLv: 0.22, critAdd: 0.015, btAdd: 0.015, cdCut: 0,    desc: '九尾通天，天生大气运傍身，大幅提高各类古宝与仙器掉率！' },
-  { id: 'pet_qilin',    tierId: 'ruishou',   tier: '上古瑞兽', name: '祥瑞麒麟', icon: '🦌', qiPerLv: 0.22, stonePerLv: 0.22, jadePerLv: 0.22, luckPerLv: 0.26, critAdd: 0,     btAdd: 0.03,  cdCut: 0,    desc: '万兽祥瑞之主，踏云而来，极大幅度增幅寻宝气运与破境机缘。' },
-  { id: 'pet_taotie',   tierId: 'ruishou',   tier: '上古凶兽', name: '上古饕餮', icon: '👹', qiPerLv: 0.25, stonePerLv: 0.42, jadePerLv: 0.26, luckPerLv: 0.18, critAdd: 0.025, btAdd: 0.015, cdCut: 0,    desc: '吞噬天地灵脉的太古凶兽，为主人疯狂掠夺海量灵石与秘宝！' },
+  { id: 'pet_ninefox',  tierId: 'ruishou',   tier: '上古瑞兽', name: '九尾天狐', icon: '🦊', qiPerLv: 0.15, stonePerLv: 0.16, jadePerLv: 0.24, luckPerLv: 0.22, critAdd: 0.015, cdCut: 0,    desc: '九尾通天，天生大气运傍身，大幅提高各类古宝与仙器掉率！' },
+  { id: 'pet_qilin',    tierId: 'ruishou',   tier: '上古瑞兽', name: '祥瑞麒麟', icon: '🦌', qiPerLv: 0.24, stonePerLv: 0.24, jadePerLv: 0.24, luckPerLv: 0.28, critAdd: 0,     cdCut: 0,    desc: '万兽祥瑞之主，踏云而来，极大幅度增幅寻宝气运与全资源产出。' },
+  { id: 'pet_taotie',   tierId: 'ruishou',   tier: '上古凶兽', name: '上古饕餮', icon: '👹', qiPerLv: 0.25, stonePerLv: 0.42, jadePerLv: 0.26, luckPerLv: 0.18, critAdd: 0.025, cdCut: 0,    desc: '吞噬天地灵脉的太古凶兽，为主人疯狂掠夺海量灵石与秘宝！' },
   // 洪荒 / 太初神兽
-  { id: 'pet_kunpeng',  tierId: 'honghuang', tier: '洪荒神兽', name: '扶摇鲲鹏', icon: '🦅', qiPerLv: 0.36, stonePerLv: 0.32, jadePerLv: 0.28, luckPerLv: 0.24, critAdd: 0.02,  btAdd: 0.025, cdCut: 0.08, desc: '扶摇直上九万里，缩减调息时间并带来惊人的修为与气运加成。' },
-  { id: 'pet_zulong',   tierId: 'honghuang', tier: '太初祖兽', name: '太初祖龙', icon: '🐲', qiPerLv: 0.55, stonePerLv: 0.55, jadePerLv: 0.45, luckPerLv: 0.35, critAdd: 0.03,  btAdd: 0.05,  cdCut: 0.10, desc: '万龙之祖，洪荒霸主！全维度逆天加持，寻宝与破境皆如天助！' }
+  { id: 'pet_kunpeng',  tierId: 'honghuang', tier: '洪荒神兽', name: '扶摇鲲鹏', icon: '🦅', qiPerLv: 0.36, stonePerLv: 0.32, jadePerLv: 0.28, luckPerLv: 0.24, critAdd: 0.02,  cdCut: 0.08, desc: '扶摇直上九万里，缩减调息时间并带来惊人的修为与气运加成。' },
+  { id: 'pet_zulong',   tierId: 'honghuang', tier: '太初祖兽', name: '太初祖龙', icon: '🐲', qiPerLv: 0.58, stonePerLv: 0.58, jadePerLv: 0.48, luckPerLv: 0.38, critAdd: 0.03,  cdCut: 0.10, desc: '万龙之祖，洪荒霸主！全维度逆天加持，修为、灵石与寻宝皆如天助！' }
 ];
 
 // 提升灵宠结缘概率的奇物（不直接买灵宠，只提高遇见上古神兽的机缘）
@@ -266,25 +271,25 @@ const RELIC_TIERS = [
 
 const RELICS = [
   // 法器（低阶）
-  { id: 'r_fq_1', tier: 'faqi',    name: '聚灵玉佩',     icon: '📿', qiPerLv: 0.03, stonePerLv: 0,    jadePerLv: 0,    luckPerLv: 0,    btPerLv: 0,     critPerLv: 0,     desc: '温润灵玉佩，每级 +3% 吐纳修为。' },
-  { id: 'r_fq_2', tier: 'faqi',    name: '纳石乾坤袋',   icon: '👝', qiPerLv: 0,    stonePerLv: 0.05, jadePerLv: 0,    luckPerLv: 0,    btPerLv: 0,     critPerLv: 0,     desc: '简易储物袋，每级 +5% 灵石产出。' },
-  { id: 'r_fq_3', tier: 'faqi',    name: '寻灵罗盘残片', icon: '🧭', qiPerLv: 0,    stonePerLv: 0,    jadePerLv: 0,    luckPerLv: 0.04, btPerLv: 0,     critPerLv: 0,     desc: '指引微弱灵机，每级 +4% 宝物掉率。' },
+  { id: 'r_fq_1', tier: 'faqi',    name: '聚灵玉佩',     icon: '📿', qiPerLv: 0.03, stonePerLv: 0,    jadePerLv: 0,    luckPerLv: 0,    critPerLv: 0,     desc: '温润灵玉佩，每级 +3% 吐纳修为。' },
+  { id: 'r_fq_2', tier: 'faqi',    name: '纳石乾坤袋',   icon: '👝', qiPerLv: 0,    stonePerLv: 0.05, jadePerLv: 0,    luckPerLv: 0,    critPerLv: 0,     desc: '简易储物袋，每级 +5% 灵石产出。' },
+  { id: 'r_fq_3', tier: 'faqi',    name: '寻灵罗盘残片', icon: '🧭', qiPerLv: 0,    stonePerLv: 0,    jadePerLv: 0,    luckPerLv: 0.04, critPerLv: 0,     desc: '指引微弱灵机，每级 +4% 宝物掉率。' },
   // 灵器 / 宝器
-  { id: 'r_lq_1', tier: 'lingqi',  name: '碧玉净瓶',     icon: '🏺', qiPerLv: 0.07, stonePerLv: 0,    jadePerLv: 0.06, luckPerLv: 0,    btPerLv: 0,     critPerLv: 0,     desc: '蕴藏甘露灵液，每级 +7% 修为、+6% 仙玉。' },
-  { id: 'r_lq_2', tier: 'lingqi',  name: '离火灵幡',     icon: '🚩', qiPerLv: 0,    stonePerLv: 0.10, jadePerLv: 0,    luckPerLv: 0,    btPerLv: 0,     critPerLv: 0.004, desc: '铭刻离火禁制，每级 +10% 灵石、+0.4% 顿悟暴击率。' },
-  { id: 'r_lq_3', tier: 'lingqi',  name: '玄冰明镜',     icon: '🪞', qiPerLv: 0.05, stonePerLv: 0,    jadePerLv: 0,    luckPerLv: 0.09, btPerLv: 0,     critPerLv: 0,     desc: '照见隐秘灵物，每级 +9% 宝物掉率、+5% 修为。' },
+  { id: 'r_lq_1', tier: 'lingqi',  name: '碧玉净瓶',     icon: '🏺', qiPerLv: 0.07, stonePerLv: 0,    jadePerLv: 0.06, luckPerLv: 0,    critPerLv: 0,     desc: '蕴藏甘露灵液，每级 +7% 修为、+6% 仙玉。' },
+  { id: 'r_lq_2', tier: 'lingqi',  name: '离火灵幡',     icon: '🚩', qiPerLv: 0,    stonePerLv: 0.10, jadePerLv: 0,    luckPerLv: 0,    critPerLv: 0.004, desc: '铭刻离火禁制，每级 +10% 灵石、+0.4% 顿悟暴击率。' },
+  { id: 'r_lq_3', tier: 'lingqi',  name: '玄冰明镜',     icon: '🪞', qiPerLv: 0.05, stonePerLv: 0,    jadePerLv: 0,    luckPerLv: 0.09, critPerLv: 0,     desc: '照见隐秘灵物，每级 +9% 宝物掉率、+5% 修为。' },
   // 法宝
-  { id: 'r_fb_1', tier: 'fabao',   name: '混元金斗',     icon: '⚱️', qiPerLv: 0,    stonePerLv: 0.18, jadePerLv: 0.14, luckPerLv: 0,    btPerLv: 0,     critPerLv: 0,     desc: '收纳天地灵财，每级 +18% 灵石、+14% 仙玉。' },
-  { id: 'r_fb_2', tier: 'fabao',   name: '番天宝印',     icon: '🗿', qiPerLv: 0.16, stonePerLv: 0,    jadePerLv: 0,    luckPerLv: 0,    btPerLv: 0.004, critPerLv: 0,     desc: '重若不周山，每级 +16% 修为、+0.4% 破境成功率。' },
-  { id: 'r_fb_3', tier: 'fabao',   name: '山河社稷残卷', icon: '📜', qiPerLv: 0.08, stonePerLv: 0.10, jadePerLv: 0,    luckPerLv: 0.16, btPerLv: 0,     critPerLv: 0,     desc: '内蕴山河气运，每级 +16% 宝物掉率、+8% 修为、+10% 灵石。' },
+  { id: 'r_fb_1', tier: 'fabao',   name: '混元金斗',     icon: '⚱️', qiPerLv: 0,    stonePerLv: 0.18, jadePerLv: 0.14, luckPerLv: 0,    critPerLv: 0,     desc: '收纳天地灵财，每级 +18% 灵石、+14% 仙玉。' },
+  { id: 'r_fb_2', tier: 'fabao',   name: '番天宝印',     icon: '🗿', qiPerLv: 0.18, stonePerLv: 0.08, jadePerLv: 0,    luckPerLv: 0,    critPerLv: 0,     desc: '重若不周山，每级 +18% 修为、+8% 灵石。' },
+  { id: 'r_fb_3', tier: 'fabao',   name: '山河社稷残卷', icon: '📜', qiPerLv: 0.08, stonePerLv: 0.10, jadePerLv: 0,    luckPerLv: 0.16, critPerLv: 0,     desc: '内蕴山河气运，每级 +16% 宝物掉率、+8% 修为、+10% 灵石。' },
   // 通天灵宝 / 古宝
-  { id: 'r_lb_1', tier: 'lingbao', name: '乾坤造化鼎',   icon: '🫕', qiPerLv: 0.30, stonePerLv: 0.32, jadePerLv: 0.25, luckPerLv: 0,    btPerLv: 0,     critPerLv: 0,     desc: '器灵自生，炼化万物，每级 +30% 修为、+32% 灵石、+25% 仙玉。' },
-  { id: 'r_lb_2', tier: 'lingbao', name: '诛仙剑阵图',   icon: '⚔️', qiPerLv: 0.38, stonePerLv: 0.20, jadePerLv: 0,    luckPerLv: 0,    btPerLv: 0,     critPerLv: 0.01,  desc: '非四圣不可破，每级 +38% 修为、+20% 灵石、+1% 暴击率。' },
-  { id: 'r_lb_3', tier: 'lingbao', name: '太极两仪图',   icon: '☯️', qiPerLv: 0.22, stonePerLv: 0,    jadePerLv: 0.18, luckPerLv: 0.30, btPerLv: 0.008, critPerLv: 0,     desc: '定地水火风，每级 +30% 宝物掉率、+22% 修为、+0.8% 破境率。' },
+  { id: 'r_lb_1', tier: 'lingbao', name: '乾坤造化鼎',   icon: '🫕', qiPerLv: 0.30, stonePerLv: 0.32, jadePerLv: 0.25, luckPerLv: 0,    critPerLv: 0,     desc: '器灵自生，炼化万物，每级 +30% 修为、+32% 灵石、+25% 仙玉。' },
+  { id: 'r_lb_2', tier: 'lingbao', name: '诛仙剑阵图',   icon: '⚔️', qiPerLv: 0.38, stonePerLv: 0.20, jadePerLv: 0,    luckPerLv: 0,    critPerLv: 0.01,  desc: '非四圣不可破，每级 +38% 修为、+20% 灵石、+1% 暴击率。' },
+  { id: 'r_lb_3', tier: 'lingbao', name: '太极两仪图',   icon: '☯️', qiPerLv: 0.24, stonePerLv: 0,    jadePerLv: 0.20, luckPerLv: 0.32, critPerLv: 0,     desc: '定地水火风，每级 +32% 宝物掉率、+24% 修为、+20% 仙玉。' },
   // 仙器 / 神器
-  { id: 'r_xq_1', tier: 'xianqi',  name: '炼妖仙壶',     icon: '🫖', qiPerLv: 0.45, stonePerLv: 0.70, jadePerLv: 0.55, luckPerLv: 0.40, btPerLv: 0,     critPerLv: 0,     desc: '仙界神器，吞纳妖灵化为无尽资粮，每级 +70% 灵石、+55% 仙玉、+40% 宝物掉率！' },
-  { id: 'r_xq_2', tier: 'xianqi',  name: '昊天仙塔',     icon: '🗼', qiPerLv: 0.85, stonePerLv: 0.45, jadePerLv: 0.35, luckPerLv: 0,    btPerLv: 0.015, critPerLv: 0,     desc: '镇压九霄仙气，每级 +85% 修为、+45% 灵石、+1.5% 破境成功率！' },
-  { id: 'r_xq_3', tier: 'xianqi',  name: '东皇太一铃',   icon: '🎐', qiPerLv: 0.65, stonePerLv: 0.65, jadePerLv: 0.65, luckPerLv: 0.45, btPerLv: 0.01,  critPerLv: 0.015, desc: '铃音震碎诸天因果，全属性暴增并额外增幅轮回道果！', karmaPerLv: 0.18 },
+  { id: 'r_xq_1', tier: 'xianqi',  name: '炼妖仙壶',     icon: '🫖', qiPerLv: 0.45, stonePerLv: 0.70, jadePerLv: 0.55, luckPerLv: 0.40, critPerLv: 0,     desc: '仙界神器，吞纳妖灵化为无尽资粮，每级 +70% 灵石、+55% 仙玉、+40% 宝物掉率！' },
+  { id: 'r_xq_2', tier: 'xianqi',  name: '昊天仙塔',     icon: '🗼', qiPerLv: 0.90, stonePerLv: 0.50, jadePerLv: 0.38, luckPerLv: 0,    critPerLv: 0,     desc: '镇压九霄仙气，每级 +90% 修为、+50% 灵石、+38% 仙玉！' },
+  { id: 'r_xq_3', tier: 'xianqi',  name: '东皇太一铃',   icon: '🎐', qiPerLv: 0.65, stonePerLv: 0.65, jadePerLv: 0.65, luckPerLv: 0.45, critPerLv: 0.015, desc: '铃音震碎诸天因果，全属性暴增并额外增幅轮回道果！', karmaPerLv: 0.18 },
   // 最高境界 · 三大先天至宝（唯一获取，随大境界提升自动共鸣变强，全境全图极低概率掉落！）
   {
     id: 'rel_yudie', tier: 'supreme', unique: true, name: '造化玉碟', icon: '💠',
@@ -293,12 +298,11 @@ const RELICS = [
     jadeMult: 2.0, jadePerRealm: 0.35,
     karmaAdd: 0.80, karmaPerRealm: 0.15,
     luckAdd: 1.00, luckPerRealm: 0.25,
-    btAdd: 0.18, btPerRealm: 0.010, btCap: 0.45,
     critAdd: 0, critPerRealm: 0, critCap: 0,
     critMultAdd: 0, critMultPerRealm: 0,
     cdCut: 0, cdPerRealm: 0, cdCap: 0,
     petExpMult: 1.0, petExpPerRealm: 0,
-    desc: '【唯一先天至宝 · 随大境界自动成长】铭刻三千大道法则！每突破一大境界，修为倍率自动 ×1.22，并同步暴涨仙玉、气运、道果与破境成功率！'
+    desc: '【唯一先天至宝 · 随大境界自动成长】铭刻三千大道法则！每突破一大境界，修为倍率自动 ×1.22，并同步暴涨仙玉、寻宝气运与轮回道果！'
   },
   {
     id: 'rel_hundun', tier: 'supreme', unique: true, name: '混沌钟', icon: '🔔',
@@ -307,7 +311,6 @@ const RELICS = [
     jadeMult: 3.5, jadePerRealm: 0.60,
     karmaAdd: 1.50, karmaPerRealm: 0.30,
     luckAdd: 0.80, luckPerRealm: 0.20,
-    btAdd: 0.10, btPerRealm: 0.006, btCap: 0.26,
     critAdd: 0, critPerRealm: 0, critCap: 0,
     critMultAdd: 0, critMultPerRealm: 0,
     cdCut: 0.15, cdPerRealm: 0.01, cdCap: 0.40,
@@ -321,12 +324,11 @@ const RELICS = [
     jadeMult: 1.5, jadePerRealm: 0.25,
     karmaAdd: 0.60, karmaPerRealm: 0.15,
     luckAdd: 0.70, luckPerRealm: 0.18,
-    btAdd: 0.12, btPerRealm: 0.008, btCap: 0.32,
     critAdd: 0.18, critPerRealm: 0.010, critCap: 0.45,
     critMultAdd: 1.0, critMultPerRealm: 0.20,
     cdCut: 0, cdPerRealm: 0, cdCap: 0,
     petExpMult: 1.5, petExpPerRealm: 0.15,
-    desc: '【唯一先天至宝 · 随大境界自动成长】盘古开天无上杀伐至宝！每突破一大境界，修为与灵石双双 ×1.20，并大幅强化顿悟暴击、破境率与出战灵宠经验！'
+    desc: '【唯一先天至宝 · 随大境界自动成长】盘古开天无上杀伐至宝！每突破一大境界，修为与灵石双双 ×1.20，并大幅强化顿悟暴击、暴伤与出战灵宠经验！'
   }
 ];
 
@@ -343,5 +345,5 @@ const VEIN_BUILDINGS = [
   { id: 'v_qi',   name: '聚灵神塔', icon: '🗼', baseCost: 2000,  scale: 1.48, maxLv: 999, qiPerLv: 0.10, petExpPerLv: 0,    luckPerLv: 0,    btPerLv: 0,     desc: '汇聚八荒灵气，每级 +10% 吐纳修为（最高 999 级）。' },
   { id: 'v_pet',  name: '御兽仙殿', icon: '🏛️', baseCost: 3500,  scale: 1.50, maxLv: 999, qiPerLv: 0,    petExpPerLv: 0.08, luckPerLv: 0,    btPerLv: 0,     desc: '滋养出战神兽，每级 +8% 出战灵宠经验获取（最高 999 级）。' },
   { id: 'v_luck', name: '炼宝灵阁', icon: '🏯', baseCost: 5000,  scale: 1.55, maxLv: 999, qiPerLv: 0,    petExpPerLv: 0,    luckPerLv: 0.06, btPerLv: 0,     desc: '聚运纳宝，每级 +6% 至宝掉落与灵宠结缘概率（最高 999 级）。' },
-  { id: 'v_bt',   name: '护道古碑', icon: '🪨', baseCost: 12000, scale: 1.65, maxLv: 75,  qiPerLv: 0,    petExpPerLv: 0,    luckPerLv: 0,    btPerLv: 0.002, desc: '镇压心魔劫，每级 +0.2% 破境成功率（最高 75 级 / +15%）。' }
+  { id: 'v_stone',name: '聚宝灵矿', icon: '⛏️', baseCost: 2500,  scale: 1.48, maxLv: 999, qiPerLv: 0,    petExpPerLv: 0,    luckPerLv: 0,    stonePerLv: 0.12, desc: '开采上古仙矿，每级 +12% 灵石产出（最高 999 级）。' }
 ];

@@ -389,36 +389,14 @@ function attemptBreakthrough(isAuto = false, silent = false) {
   }
 
   const req = getQiRequired();
-  const guardCost = getJadeGuardCost();
-  let usedGuard = false;
-  if (state.useJadeGuard) {
-    if (state.jade >= guardCost) {
-      state.jade -= guardCost;
-      usedGuard = true;
-    } else if (!isAuto && !silent) {
-      showToast(`仙玉不足 ${fmt(guardCost)}，本次破境未触发护道！`, 'amber');
-    }
-  }
+  // 破境成功率（仅由境界基础率 + 逆天体质决定）
+  const chance = getBreakthroughChance();
 
-  // 用含本次护道状态的成功率判定
-  const rCur = getRealm();
-  let chance = rCur.baseRate ?? 1.0;
-  if (state.subIdx === 3 && !isAtMortalPeak()) {
-    chance = state.realmIdx >= 9 ? chance * 0.65 : (state.realmIdx >= 1 ? Math.max(0.05, chance - 0.10) : chance);
-  }
-  chance += state.physiques.length * 0.04 + getPhysiqueBonuses().btAdd;
-  if (usedGuard) chance += (state.realmIdx >= 9 ? 0.18 : 0.25);
-  chance += getPetBonuses().bt + getRelicBonuses().btAdd + getVeinBonuses().bt;
-  chance += (state.btPity || 0);
-  chance = Math.max(0.01, Math.min(1.0, chance));
-
-  // 破境失败判定（心魔反噬 / 仙劫重创）
+  // 破境失败判定（心魔反噬 / 仙劫重创，无保底叠加）
   if (Math.random() >= chance) {
-    const lossRatio = getBreakthroughFailLossRatio(usedGuard);
+    const lossRatio = getBreakthroughFailLossRatio(false);
     const lostQi = Math.floor(req * lossRatio);
-    const pityGain = getBreakthroughPityStep();
     state.qi = Math.max(0, state.qi - lostQi);
-    state.btPity = Math.min(1.0, (state.btPity || 0) + pityGain);
 
     if (!silent) {
       if (!isAuto) {
@@ -428,21 +406,18 @@ function attemptBreakthrough(isAuto = false, silent = false) {
           kicker: state.realmIdx >= 9 ? '九霄仙劫反噬 · 破境受阻' : '心魔扰动 · 冲击瓶颈失败',
           icon: '🌩️',
           title: '破境失败 · 灵气溃散',
-          subtitle: usedGuard
-            ? '幸得仙玉护道抵消半数反噬！虽未破关，但道心愈发凝练。'
-            : '境界壁垒坚如磐石，强行冲关遭致反噬，建议积攒仙玉开启「护道」或觉醒圣体！',
+          subtitle: '大道无情，境界壁垒坚如磐石！唯有觉醒「🧬 逆天体质」（尤其是终极三圣体）方可提升破境成功率！',
           rewards: [
             `修为损耗 -${Math.round(lossRatio * 100)}% (-${fmt(lostQi)})`,
-            `道心感悟 +${Math.round(pityGain * 100)}% 成功率`,
-            `当前保底：+${Math.round(state.btPity * 100)}%`
+            `当前破境成功率：${(chance * 100).toFixed(1)}%`
           ]
         });
       } else {
-        showToast(`🌩️ 自动冲关失败，道心保底 +${Math.round(pityGain * 100)}%`, 'rose');
+        showToast(`🌩️ 自动冲关失败（成功率 ${(chance * 100).toFixed(1)}%），灵气溃散 -${fmt(lostQi)}`, 'rose');
       }
 
       addLog(
-        `🌩️ <span class="feed-strong">${isAuto ? '[自动] ' : ''}冲击「${getNextRealmLabel()}」失败</span>（成功率 ${(chance * 100).toFixed(1)}%）：灵气溃散 <span class="feed-amber">-${fmt(lostQi)}</span>，道心愈坚，下次破境成功率 <span class="feed-emerald">+${Math.round(pityGain * 100)}%</span>！`,
+        `🌩️ <span class="feed-strong">${isAuto ? '[自动] ' : ''}冲击「${getNextRealmLabel()}」失败</span>（成功率 ${(chance * 100).toFixed(1)}%）：灵气溃散 <span class="feed-amber">-${fmt(lostQi)}</span>！`,
         'break'
       );
 
@@ -472,7 +447,8 @@ function attemptBreakthrough(isAuto = false, silent = false) {
     if (state.realmIdx > state.maxRealmEver) {
       state.maxRealmEver = state.realmIdx;
     }
-    unlockedArtName = REALMS[state.realmIdx].art.name;
+    const _newR = getRealmByIdx(state.realmIdx);
+    unlockedArtName = _newR.art ? _newR.art.name : null;
   }
 
   const r = getRealm();
@@ -490,13 +466,17 @@ function attemptBreakthrough(isAuto = false, silent = false) {
       `寿元：${r.lifespan}`
     ];
     if (unlockedArtName) rewards.push(`领悟新功法：《${unlockedArtName}》`);
+    if (isMajor && r.isEndless) {
+      rewards.push(`♾️ 无尽升阶 · 第 ${r.ascStep} 阶`);
+      rewards.push('先天至宝 & 逆天圣体自动共鸣暴涨！');
+    }
 
     // 手动破境全部播动画；自动破境仅在【突破大境界】时播放震撼全屏动画，小境界用提示避免频繁遮挡
     if (!isAuto || isMajor) {
       playBreakthroughSound(isMajor ? 'major' : 'minor');
       showBreakthroughAnimation({
         type: isMajor ? 'major' : 'minor',
-        kicker: isMajor ? '紫气东来 · 法相蜕变 · 大道破境' : '气海圆满 · 境界精进',
+        kicker: (isMajor && r.isEndless) ? `♾️ 打破极限 · 无尽升阶第 ${r.ascStep} 阶` : (isMajor ? '紫气东来 · 法相蜕变 · 大道破境' : '气海圆满 · 境界精进'),
         icon: isMajor ? '🌟' : '⚡',
         customSvg: typeof getCultivatorAvatarSVG === 'function' ? getCultivatorAvatarSVG(state.realmIdx, 102, state.subIdx) : null,
         title: fullRealmName,
@@ -587,7 +567,7 @@ function doReincarnate() {
   state.ownedArtifacts = ['art_0'];
   state.activePill = null;
   state.pills = Object.fromEntries(PILLS.map(x => [x.id, x.id === 'p_qi' ? 5 : 0]));
-  state.veins = { v_qi: 0, v_pet: 0, v_luck: 0, v_bt: 0 };
+  state.veins = { v_qi: 0, v_pet: 0, v_luck: 0, v_stone: 0 };
   state.burnStones = false;
   state.chests = 0;
   REALMS.forEach(r => { state.arts[r.art.id] = 0; });

@@ -1064,11 +1064,11 @@ function flushHUD() {
     DOM.dockBreakBtn.className = 'col-span-5 min-h-[48px] py-2 px-2 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1 breakthrough-ready-pulse';
   } else if (readyBreak) {
     const isNextMajor = state.subIdx === 3;
-    const pctStr = `${(getBreakthroughChance() * 100).toFixed(state.realmIdx >= 9 ? 1 : 0)}%`;
+    const pctStr = `${(getBreakthroughChance() * 100).toFixed(1)}%`;
     DOM.btTopBtn.textContent = isNextMajor ? `🌟 突破大境 (${pctStr})` : `⚡ 突破 (${pctStr})`;
     DOM.btTopBtn.className = 'px-3.5 sm:px-5 py-2 rounded-xl font-black text-xs sm:text-sm tracking-wide transition shrink-0 bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-400 text-slate-950 border border-amber-200 breakthrough-ready-pulse';
     DOM.btCardText.textContent = isNextMajor
-      ? `冲击「${REALMS[state.realmIdx + 1]?.name}」· 成功率 ${pctStr}`
+      ? `冲击「${getRealmByIdx(state.realmIdx + 1).name}」· 成功率 ${pctStr}`
       : `突破至「${getNextRealmLabel()}」· 成功率 ${pctStr}`;
     DOM.dockBreakBtn.className = 'col-span-5 min-h-[48px] py-2 px-2 rounded-2xl bg-gradient-to-r from-amber-300 to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1 breakthrough-ready-pulse';
   } else {
@@ -1868,7 +1868,7 @@ function renderRelicsTab(container) {
 
   // 2. 最高境界 · 三大先天至宝展示殿（实时展示当前大境界共鸣加成）
   const curRealmObj = getRealm();
-  const shortRealmName = curRealmObj.name.length > 8 ? '创世大天尊境' : curRealmObj.name;
+  const shortRealmName = curRealmObj.name.length > 16 ? '创世大天尊境' : curRealmObj.name;
   const fmtMultX = v => v >= 1000 ? `${fmt(v)}x` : v >= 100 ? `${v.toFixed(0)}x` : `${v.toFixed(2)}x`;
 
   const supremeCards = RELICS.filter(r => r.unique).map(rel => {
@@ -2017,7 +2017,7 @@ function renderVeinsTab(container) {
     if (b.qiPerLv)     curStat = `当前总加成：+${fmt(Math.round(lv * b.qiPerLv * 100))}% 修为`;
     if (b.petExpPerLv) curStat = `当前总加成：+${fmt(Math.round(lv * b.petExpPerLv * 100))}% 出战灵宠经验`;
     if (b.luckPerLv)   curStat = `当前总加成：+${fmt(Math.round(lv * b.luckPerLv * 100))}% 至宝与灵宠掉率`;
-    if (b.btPerLv)     curStat = `当前总加成：+${(Math.min(0.15, lv * b.btPerLv) * 100).toFixed(1)}% 破境成功率`;
+    if (b.stonePerLv)  curStat = `当前总加成：+${fmt(Math.round(lv * b.stonePerLv * 100))}% 灵石产出`;
 
     return `
       <div class="p-3.5 rounded-xl bg-xian-850 border ${lv > 0 ? 'border-amber-400/45 shadow' : 'border-slate-800'} flex flex-col justify-between gap-3">
@@ -2045,13 +2045,13 @@ function renderVeinsTab(container) {
           <span class="px-2.5 py-0.5 rounded-full bg-black/40 text-xs font-mono font-bold text-teal-300">灵脉总阶：${fmt(totalLv)} 级</span>
         </div>
         <p class="text-xs text-slate-300 leading-relaxed">
-          将盈余灵石尽数灌注于洞府四大神殿，持续拔高修为、出战灵宠经验、寻宝结缘率与破境成功率（轮回转世时重置，可搭配洞府左侧「🔥 燃石修炼」双管齐下消耗灵石）。
+          将盈余灵石尽数灌注于洞府四大灵脉建筑，持续拔高修为、灵石产出、出战灵宠经验与寻宝结缘率（轮回转世时重置，可搭配洞府左侧「🔥 燃石修炼」双管齐下消耗灵石）。
         </p>
         <div class="flex flex-wrap gap-1.5 pt-1 text-[10px] font-mono">
           <span class="px-2 py-0.5 rounded bg-teal-500/15 text-teal-300">+${fmt(Math.round(vb.qi * 100))}% 修为</span>
           <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300">+${fmt(Math.round(vb.petExp * 100))}% 灵宠经验</span>
           <span class="px-2 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300">+${fmt(Math.round(vb.luck * 100))}% 掉率气运</span>
-          <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300">+${(vb.bt * 100).toFixed(1)}% 破境率</span>
+          <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300">+${fmt(Math.round(vb.stone * 100))}% 灵石</span>
         </div>
       </div>
 
@@ -2071,7 +2071,7 @@ function renderVeinsTab(container) {
       const calc = calcBulk(b.baseCost, b.scale, lv, b.maxLv, state.stones);
       if (calc.canBuy && calc.count > 0) {
         state.stones -= calc.cost;
-        if (!state.veins) state.veins = { v_qi: 0, v_pet: 0, v_luck: 0, v_bt: 0 };
+        if (!state.veins) state.veins = { v_qi: 0, v_pet: 0, v_luck: 0, v_stone: 0 };
         state.veins[b.id] = lv + calc.count;
         saveGame(false);
         hudDirty = true;
@@ -2140,8 +2140,36 @@ function renderWorldsTab(container) {
 function renderRealmsTab(container) {
   const maxSeen = Math.max(state.realmIdx, state.maxRealmEver);
   const rows = [];
-  for (let i = 0; i <= Math.min(REALMS.length - 1, maxSeen + 1); i++) {
-    const r = REALMS[i];
+
+  const renderRealmRow = (r, isCur) => {
+    const badgeCls = r.tier === '人界' ? 'bg-sky-500/20 text-sky-300'
+      : r.tier === '仙界' ? 'bg-amber-500/20 text-amber-300'
+      : r.tier === '至高' ? 'bg-fuchsia-500/20 text-fuchsia-300'
+      : r.tier === '超脱' ? 'bg-cyan-500/25 text-cyan-200'
+      : r.tier === '无尽' ? 'bg-gradient-to-r from-amber-300/40 via-fuchsia-500/40 to-cyan-400/40 text-white border border-amber-300/50'
+      : 'bg-gradient-to-r from-amber-400/35 to-fuchsia-500/35 text-amber-100';
+
+    return `
+      <div class="p-3.5 rounded-xl border ${isCur ? 'bg-teal-500/15 border-teal-400/60' : r.isEndless ? 'bg-gradient-to-r from-fuchsia-950/40 via-xian-850 to-indigo-950/40 border-amber-400/35' : 'bg-xian-850 border-slate-800'} flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeCls}">${r.tier}</span>
+            <span class="font-black text-sm text-white">${r.name}</span>
+            ${isCur ? `<span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 text-[10px] font-bold">当前：${SUB_REALMS[state.subIdx]}</span>` : ''}
+          </div>
+          <p class="text-xs text-slate-400 mt-1">${r.desc}</p>
+        </div>
+        <div class="text-right text-xs font-mono shrink-0">
+          <div class="text-teal-300">寿元：${r.lifespan}</div>
+          <div class="text-[10px] ${r.idx >= 9 ? 'text-rose-300 font-bold' : 'text-slate-400'}">基础破境率：${(r.baseRate * 100).toFixed(r.idx >= 13 ? 1 : 0)}%</div>
+        </div>
+      </div>
+    `;
+  };
+
+  // 1. 固定 27 大境（含未探明的下 1 境迷雾）
+  const fixedLimit = Math.min(REALMS.length - 1, maxSeen + 1);
+  for (let i = 0; i <= fixedLimit; i++) {
     if (i > maxSeen) {
       rows.push(`
         <div class="p-3.5 rounded-xl bg-xian-950/85 border border-dashed border-slate-700 flex items-center justify-between gap-3 opacity-80">
@@ -2157,30 +2185,47 @@ function renderRealmsTab(container) {
       `);
       break;
     }
-    const isCur = i === state.realmIdx;
+    rows.push(renderRealmRow(REALMS[i], i === state.realmIdx));
+  }
+
+  // 2. 创世大天尊境之后的【无尽升阶】（无上限，每阶等同完整大境界）
+  if (maxSeen >= REALMS.length - 1) {
+    const startEndless = Math.max(REALMS.length, maxSeen - 4);
+    if (startEndless > REALMS.length) {
+      rows.push(`
+        <div class="px-3.5 py-2 rounded-xl bg-xian-950/70 border border-slate-800 text-center text-[11px] text-slate-400 font-mono">
+          ⋯ 已跨越无尽升阶 第 1 阶 ～ 第 ${startEndless - REALMS.length} 阶 ⋯
+        </div>
+      `);
+    }
+    for (let i = startEndless; i <= maxSeen; i++) {
+      rows.push(renderRealmRow(getRealmByIdx(i), i === state.realmIdx));
+    }
+    const nextAsc = (maxSeen + 1) - REALMS.length + 1;
     rows.push(`
-      <div class="p-3.5 rounded-xl border ${isCur ? 'bg-teal-500/15 border-teal-400/60' : 'bg-xian-850 border-slate-800'} flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${r.tier === '人界' ? 'bg-sky-500/20 text-sky-300' : r.tier === '仙界' ? 'bg-amber-500/20 text-amber-300' : r.tier === '至高' ? 'bg-fuchsia-500/20 text-fuchsia-300' : r.tier === '超脱' ? 'bg-cyan-500/25 text-cyan-200' : 'bg-gradient-to-r from-amber-400/35 to-fuchsia-500/35 text-amber-100'}">${r.tier}</span>
-            <span class="font-black text-sm text-white">${r.name}</span>
-            ${isCur ? `<span class="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 text-[10px] font-bold">当前：${SUB_REALMS[state.subIdx]}</span>` : ''}
+      <div class="p-3.5 rounded-xl bg-gradient-to-r from-fuchsia-950/40 via-xian-950 to-amber-950/30 border border-dashed border-amber-400/45 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">♾️</span>
+          <div>
+            <div class="font-black text-sm text-amber-200">创世大天尊 · 第${nextAsc}阶（无尽升阶 · 永无止境）</div>
+            <div class="text-xs text-slate-400">破开当前大圆满瓶颈即可无上限升阶，每阶均享完整大境界成长与至宝/圣体共鸣！</div>
           </div>
-          <p class="text-xs text-slate-400 mt-1">${r.desc}</p>
         </div>
-        <div class="text-right text-xs font-mono shrink-0">
-          <div class="text-teal-300">寿元：${r.lifespan}</div>
-          <div class="text-[10px] ${r.idx >= 9 ? 'text-rose-300 font-bold' : 'text-slate-400'}">基础破境率：${(r.baseRate * 100).toFixed(r.idx >= 13 ? 1 : 0)}%</div>
-        </div>
+        <span class="text-[11px] font-mono text-amber-300 shrink-0">待冲击</span>
       </div>
     `);
   }
 
+  const endlessReached = Math.max(0, maxSeen - REALMS.length + 1);
+  const progressLabel = maxSeen >= REALMS.length - 1
+    ? `已探明 ${REALMS.length} 大境 + 无尽第 ${endlessReached} 阶 / ∞`
+    : `已探明 ${maxSeen + 1} / ${REALMS.length} 大境 (+无尽升阶)`;
+
   container.innerHTML = `
     <div class="space-y-3">
-      <div class="flex items-center justify-between">
-        <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">📜 修真境界图谱（未达境界隐于迷雾）</h4>
-        <span class="text-xs font-mono text-amber-300">已探明 ${maxSeen + 1} / ${REALMS.length} 大境</span>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">📜 修真境界图谱（27大境 + 无上限升阶）</h4>
+        <span class="text-xs font-mono text-amber-300">${progressLabel}</span>
       </div>
       <div class="space-y-2.5">${rows.join('')}</div>
     </div>
@@ -2204,7 +2249,7 @@ function renderPhysiquesTab(container) {
   const mult = getPhysiqueCostMultiplier();
   const baseCount = getUnlockedBasePhysiqueCount();
   const curRealmObj = getRealm();
-  const shortRealmName = curRealmObj.name.length > 8 ? '创世大天尊境' : curRealmObj.name;
+  const shortRealmName = curRealmObj.name.length > 16 ? '创世大天尊境' : curRealmObj.name;
   const fmtMultX = v => v >= 1000 ? `${fmt(v)}x` : v >= 100 ? `${v.toFixed(0)}x` : `${v.toFixed(2)}x`;
 
   const buildCard = (ph) => {
@@ -2468,7 +2513,8 @@ function renderLeaderboardTab(container) {
     const rank = idx + 1;
     const isMe = p.uid === myUid;
     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-    const rObj = REALMS[Math.min(REALMS.length - 1, p.realmIdx || 0)] || REALMS[0];
+    const rObj = getRealmByIdx(p.realmIdx || 0);
+    const rShortName = rObj.name.length > 16 ? '创世大天尊境' : rObj.name;
     const subName = SUB_REALMS[Math.min(3, p.subIdx || 0)] || '初期';
     return `
       <div class="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border ${
@@ -2485,7 +2531,7 @@ function renderLeaderboardTab(container) {
             <div class="text-[11px] text-slate-400 flex items-center gap-2">
               <span class="text-fuchsia-300 font-bold">${p.prestige || 0}世</span>
               <span>•</span>
-              <span class="text-amber-300 font-bold">${rObj.name}·${subName}</span>
+              <span class="text-amber-300 font-bold">${rShortName}·${subName}</span>
               <span class="hidden sm:inline">•</span>
               <span class="hidden sm:inline text-teal-300">圣体 ${p.physiqueCount || 0}</span>
             </div>

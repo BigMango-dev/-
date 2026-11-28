@@ -38,7 +38,7 @@ function defaultState() {
     relics,             // 宝物等级 (重复获得自动升级；先天至宝最高1级)
     luckUpgrades: { lu_compass: 0, lu_eye: 0, lu_array: 0 },
     petLuckUpgrades: { plu_incense: 0, plu_bell: 0, plu_altar: 0 },
-    veins: { v_qi: 0, v_pet: 0, v_luck: 0, v_bt: 0 },
+    veins: { v_qi: 0, v_pet: 0, v_luck: 0, v_stone: 0 },
     burnStones: false,
     totalRelicsFound: 0,
     totalPetsFound: 0,
@@ -87,9 +87,9 @@ function mergeState(parsed) {
     karma: safeNum(p.karma, 0, 0),
     prestige: Math.floor(safeNum(p.prestige, 0, 0)),
     ascended: Boolean(p.ascended),
-    realmIdx: Math.min(REALMS.length - 1, Math.floor(safeNum(p.realmIdx, 0, 0))),
+    realmIdx: Math.floor(safeNum(p.realmIdx, 0, 0)),
     subIdx: Math.min(3, Math.floor(safeNum(p.subIdx, 0, 0))),
-    maxRealmEver: Math.min(REALMS.length - 1, Math.floor(safeNum(p.maxRealmEver, safeNum(p.realmIdx, 0, 0), 0))),
+    maxRealmEver: Math.floor(safeNum(p.maxRealmEver, safeNum(p.realmIdx, 0, 0), 0)),
     qi: safeNum(p.qi, 0, 0),
     totalTicks: Math.floor(safeNum(p.totalTicks, 0, 0)),
     chests: Math.floor(safeNum(p.chests, 0, 0)),
@@ -151,7 +151,28 @@ function fmt(n) {
   return val.toFixed(val >= 100 ? 1 : 2) + units[idx];
 }
 
-function getRealm() { return REALMS[state.realmIdx] || REALMS[0]; }
+// 根据索引获取大境界（第 27 境之后进入无限制升阶：每一阶等同于一个完整大境界，含初期/中期/后期/大圆满，无上限！）
+function getRealmByIdx(idx) {
+  const i = Math.max(0, Math.floor(idx || 0));
+  if (i < REALMS.length) return REALMS[i];
+  const ascStep = i - REALMS.length + 1; // 1, 2, 3, ... 无上限
+  const lastFixed = REALMS[REALMS.length - 1];
+  return {
+    idx: i,
+    ascStep,
+    isEndless: true,
+    tier: '无尽',
+    name: `创世大天尊 · 第${ascStep}阶`,
+    lifespan: `超脱第${ascStep}纪`,
+    baseQi: Math.min(1e303, lastFixed.baseQi * Math.pow(60, ascStep)),
+    baseRate: 0.001,
+    stoneBonus: Math.min(1e280, lastFixed.stoneBonus * Math.pow(5, ascStep)),
+    desc: `已凌驾一切概念之上，步入无尽升阶第 ${ascStep} 阶！每破一阶皆如重开大境，先天至宝、逆天圣体与灵石收益持续无上限共鸣暴涨！`,
+    art: null
+  };
+}
+
+function getRealm(idx = state.realmIdx) { return getRealmByIdx(idx); }
 function getWorld() { return WORLDS.find(w => w.id === state.worldId) || WORLDS[0]; }
 function getArtifact() { return ARTIFACTS.find(a => a.id === state.artifactId) || ARTIFACTS[0]; }
 function getActivePill() {
@@ -172,7 +193,8 @@ function getQiRequired() {
   }
   const subScale = subScales[state.subIdx] || subScales[3];
   const prestigeTax = 1 + state.prestige * 0.12;
-  return Math.max(1, Math.floor((r.baseQi * subScale * prestigeTax * 0.5) / 20));
+  const rawQi = r.baseQi * subScale * prestigeTax * 0.5;
+  return Math.max(1, Math.floor(Math.min(1e305, Number.isFinite(rawQi) ? rawQi : 1e305)));
 }
 
 // 仙玉护道消耗（每次尝试破境时扣除）
@@ -198,7 +220,7 @@ function getBreakthroughPityStep() {
   return 0.10;                           // 人界 +10%
 }
 
-// 综合破境成功率（考虑境界基础率、大境界瓶颈惩罚、逆天体质、仙玉护道、道心保底）
+// 综合破境成功率（仅受境界基础率、大境界瓶颈与【逆天体质】影响，已移除其他一切概率加成）
 function getBreakthroughChance() {
   const r = getRealm();
   let chance = r.baseRate ?? 1.0;
@@ -212,22 +234,10 @@ function getBreakthroughChance() {
     }
   }
 
-  // 逆天体质护道加成：每种体质基础 +4% + 体质专属随境界成长的破境加成
-  chance += state.physiques.length * 0.04 + getPhysiqueBonuses().btAdd;
+  // 唯一破境概率加成来源：逆天体质（前六体小幅提升，最后三大终极圣体提升较多）
+  chance += getPhysiqueBonuses().btAdd;
 
-  // 仙玉护道加成
-  const guardCost = getJadeGuardCost();
-  if (state.useJadeGuard && state.jade >= guardCost) {
-    chance += (state.realmIdx >= 9 ? 0.18 : 0.25);
-  }
-
-  // 上古灵宠与宝物破境加持
-  chance += getPetBonuses().bt + getRelicBonuses().btAdd + getVeinBonuses().bt;
-
-  // 失败感悟保底
-  chance += (state.btPity || 0);
-
-  return Math.max(0.01, Math.min(1.0, chance));
+  return Math.max(0.001, Math.min(1.0, chance));
 }
 
 function isAtMortalPeak() {
@@ -235,7 +245,7 @@ function isAtMortalPeak() {
 }
 
 function isAtSupremePeak() {
-  return state.realmIdx === REALMS.length - 1 && state.subIdx === 3;
+  return false; // 创世大天尊境之后开启无尽升阶，永无止境！
 }
 
 function canBreakthrough() {
@@ -265,8 +275,8 @@ function getPhysiqueCostMultiplier() {
 function getPhysiqueActualCost(ph) {
   const mult = getPhysiqueCostMultiplier();
   return {
-    karma: Math.max(1, Math.floor((ph.baseKarma * mult) / 20)),
-    jade: Math.max(1, Math.floor((ph.baseJade * mult) / 20))
+    karma: Math.floor(ph.baseKarma * mult),
+    jade: Math.floor(ph.baseJade * mult)
   };
 }
 
@@ -315,7 +325,7 @@ function getPhysiqueLockReason(ph) {
 // 计算单个逆天体质随当前大境界（realmIdx 0..26）自动成长后的实时属性
 function getPhysiqueLiveStats(ph, realmIdx = state.realmIdx) {
   const r = Math.max(0, Math.floor(realmIdx || 0));
-  const scale = Math.pow(ph.realmGrowth || 1.12, r);
+  const scale = Math.min(1e150, Math.pow(ph.realmGrowth || 1.12, r));
   const btRaw = (ph.btBase || 0) + r * (ph.btPerRealm || 0);
   const critRaw = (ph.critBase || 0) + r * (ph.critPerRealm || 0);
   return {
@@ -323,8 +333,8 @@ function getPhysiqueLiveStats(ph, realmIdx = state.realmIdx) {
     jade: ph.jadeBonus * scale,
     karma: ph.karmaBonus * scale,
     qi: ph.qiBonus * scale,
-    qiMult: ph.qiMultBase ? ph.qiMultBase * Math.pow(ph.qiMultGrowth || 1, r) : 1,
-    stoneMult: ph.stoneMultBase ? ph.stoneMultBase * Math.pow(ph.stoneMultGrowth || 1, r) : 1,
+    qiMult: ph.qiMultBase ? Math.min(1e150, ph.qiMultBase * Math.pow(ph.qiMultGrowth || 1, r)) : 1,
+    stoneMult: ph.stoneMultBase ? Math.min(1e150, ph.stoneMultBase * Math.pow(ph.stoneMultGrowth || 1, r)) : 1,
     jadeMult: ph.jadeMultBase ? ph.jadeMultBase + r * (ph.jadeMultPerRealm || 0) : 1,
     karmaMult: ph.karmaMultBase ? ph.karmaMultBase + r * (ph.karmaMultPerRealm || 0) : 1,
     petExpMult: ph.petExpMultBase ? ph.petExpMultBase + r * (ph.petExpPerRealm || 0) : 1,
@@ -408,7 +418,7 @@ function getPetBonuses() {
     jade += lv * pet.jadePerLv * mult;
     luck += lv * pet.luckPerLv * mult;
     crit += (pet.critAdd || 0) * mult;
-    bt += (pet.btAdd || 0) * mult;
+    bt += 0;
     cdCut += (pet.cdCut || 0) * mult;
   }
   return { qi, stone, jade, luck, crit, bt, cdCut };
@@ -418,12 +428,12 @@ function getPetBonuses() {
 function getSupremeRelicStats(rel, realmIdx = state.realmIdx) {
   const r = Math.max(0, Math.floor(realmIdx || 0));
   return {
-    qiMult: (rel.qiMult || 1) * Math.pow(rel.qiGrowth || 1, r),
-    stoneMult: (rel.stoneMult || 1) * Math.pow(rel.stoneGrowth || 1, r),
+    qiMult: Math.min(1e150, (rel.qiMult || 1) * Math.pow(rel.qiGrowth || 1, r)),
+    stoneMult: Math.min(1e150, (rel.stoneMult || 1) * Math.pow(rel.stoneGrowth || 1, r)),
     jadeMult: (rel.jadeMult || 1) + r * (rel.jadePerRealm || 0),
     karmaAdd: (rel.karmaAdd || 0) + r * (rel.karmaPerRealm || 0),
     luckAdd: (rel.luckAdd || 0) + r * (rel.luckPerRealm || 0),
-    btAdd: rel.btCap ? Math.min(rel.btCap, (rel.btAdd || 0) + r * (rel.btPerRealm || 0)) : ((rel.btAdd || 0) + r * (rel.btPerRealm || 0)),
+    btAdd: 0,
     critAdd: rel.critCap ? Math.min(rel.critCap, (rel.critAdd || 0) + r * (rel.critPerRealm || 0)) : ((rel.critAdd || 0) + r * (rel.critPerRealm || 0)),
     critMultAdd: (rel.critMultAdd || 0) + r * (rel.critMultPerRealm || 0),
     cdCut: rel.cdCap ? Math.min(rel.cdCap, (rel.cdCut || 0) + r * (rel.cdPerRealm || 0)) : ((rel.cdCut || 0) + r * (rel.cdPerRealm || 0)),
@@ -455,7 +465,7 @@ function getRelicBonuses() {
       stoneAdd += lv * (rel.stonePerLv || 0);
       jadeAdd += lv * (rel.jadePerLv || 0);
       luckAdd += lv * (rel.luckPerLv || 0);
-      btAdd += Math.min(0.12, lv * (rel.btPerLv || 0));
+      btAdd += 0;
       critAdd += Math.min(0.15, lv * (rel.critPerLv || 0));
       karmaAdd += lv * (rel.karmaPerLv || 0);
     }
@@ -517,7 +527,7 @@ function getVeinBonuses() {
     qi: (v.v_qi || 0) * 0.10,
     petExp: (v.v_pet || 0) * 0.08,
     luck: (v.v_luck || 0) * 0.06,
-    bt: Math.min(0.15, (v.v_bt || 0) * 0.002)
+    stone: (v.v_stone || 0) * 0.12
   };
 }
 
@@ -547,7 +557,7 @@ function getStoneMultiplier() {
   const pb = getPhysiqueBonuses();
   const petB = getPetBonuses();
   const relB = getRelicBonuses();
-  const linearPerm = 1 + state.prestige * 0.25 + state.karmaPerks.k_stone * 0.20 + pb.stone + petB.stone + relB.stoneAdd;
+  const linearPerm = 1 + state.prestige * 0.25 + state.karmaPerks.k_stone * 0.20 + pb.stone + petB.stone + relB.stoneAdd + getVeinBonuses().stone;
   const ascendMult = state.ascended ? 1.60 : 1.0;
   return art.stoneMult * (pill ? pill.stoneMult : 1) * linearPerm * ascendMult * relB.stoneMult * pb.stoneMult;
 }
@@ -568,9 +578,8 @@ function getKarmaOnReincarnate() {
 }
 
 function getNextRealmLabel() {
-  if (isAtSupremePeak()) return '无上圆满';
   if (isAtMortalPeak()) return '⚡ 待渡劫飞升仙界';
   if (state.subIdx < 3) return `${getRealm().name} · ${SUB_REALMS[state.subIdx + 1]}`;
-  const next = REALMS[state.realmIdx + 1];
-  return next ? `${next.name} · 初期` : '无上圆满';
+  const next = getRealmByIdx(state.realmIdx + 1);
+  return `${next.name} · 初期`;
 }
