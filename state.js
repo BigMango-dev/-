@@ -172,7 +172,7 @@ function getQiRequired() {
   }
   const subScale = subScales[state.subIdx] || subScales[3];
   const prestigeTax = 1 + state.prestige * 0.12;
-  return Math.max(1, Math.floor(r.baseQi * subScale * prestigeTax * 0.5));
+  return Math.max(1, Math.floor((r.baseQi * subScale * prestigeTax * 0.5) / 20));
 }
 
 // 仙玉护道消耗（每次尝试破境时扣除）
@@ -265,8 +265,8 @@ function getPhysiqueCostMultiplier() {
 function getPhysiqueActualCost(ph) {
   const mult = getPhysiqueCostMultiplier();
   return {
-    karma: Math.floor(ph.baseKarma * mult),
-    jade: Math.floor(ph.baseJade * mult)
+    karma: Math.max(1, Math.floor((ph.baseKarma * mult) / 20)),
+    jade: Math.max(1, Math.floor((ph.baseJade * mult) / 20))
   };
 }
 
